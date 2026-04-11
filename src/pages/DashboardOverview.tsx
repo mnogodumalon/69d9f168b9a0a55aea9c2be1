@@ -1,7 +1,7 @@
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { enrichWissensobjekte } from '@/lib/enrich';
 import type { EnrichedWissensobjekte } from '@/types/enriched';
-import type { Wissensobjekte, Wissenslandkarten, KartenKnoten, ObjektVerlinkungen } from '@/types/app';
+import type { Wissensobjekte, Wissenslandkarten, KartenKnoten, ObjektVerlinkungen, Benutzerrollen } from '@/types/app';
 import { LivingAppsService, extractRecordId } from '@/services/livingAppsService';
 import { formatDate } from '@/lib/formatters';
 import { useState, useMemo } from 'react';
@@ -15,7 +15,7 @@ import {
   IconAlertCircle, IconTool, IconRefresh, IconCheck, IconPlus, IconPencil, IconTrash,
   IconBulb, IconBook, IconShare, IconRocket, IconArchive, IconUsers, IconMap,
   IconStar, IconTrendingUp, IconSearch, IconChevronRight, IconNetwork,
-  IconChevronDown, IconChevronLeft, IconExternalLink, IconFile, IconPhoto, IconX
+  IconChevronDown, IconChevronLeft, IconExternalLink, IconFile, IconPhoto, IconX, IconArrowLeft
 } from '@tabler/icons-react';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -102,6 +102,9 @@ export default function DashboardOverview() {
 
   const [expandedPhases, setExpandedPhases] = useState<Set<string>>(new Set());
   const [phasePages, setPhasePages] = useState<Record<string, number>>({});
+  const [authorPanelUser, setAuthorPanelUser] = useState<Benutzerrollen | null>(null);
+  const [authorPanelItem, setAuthorPanelItem] = useState<EnrichedWissensobjekte | null>(null);
+  const [authorPanelImageExpanded, setAuthorPanelImageExpanded] = useState(false);
 
   const activeItems = useMemo(() => enrichedWissensobjekte.filter(i => i.fields.phase?.key !== 'archived'), [enrichedWissensobjekte]);
   const avgQuality = useMemo(() => {
@@ -351,14 +354,18 @@ export default function DashboardOverview() {
                 extractRecordId(w.fields.author) === user.record_id
               ).length;
               return (
-                <div key={user.record_id} className="flex items-center gap-3 min-w-0 rounded-xl border p-3">
+                <button
+                  key={user.record_id}
+                  onClick={() => { setAuthorPanelUser(user); setAuthorPanelItem(null); setAuthorPanelImageExpanded(false); }}
+                  className="flex items-center gap-3 min-w-0 rounded-xl border p-3 hover:bg-accent hover:border-primary/30 transition-all text-left w-full group"
+                >
                   <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                     <span className="text-xs font-bold text-primary">
                       {(user.fields.firstname?.[0] ?? user.fields.lastname?.[0] ?? '?').toUpperCase()}
                     </span>
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium truncate">
+                    <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">
                       {[user.fields.firstname, user.fields.lastname].filter(Boolean).join(' ') || user.fields.email || '—'}
                     </p>
                     <p className="text-xs text-muted-foreground">{user.fields.role?.label ?? '—'}</p>
@@ -367,7 +374,7 @@ export default function DashboardOverview() {
                     <span className="text-sm font-bold">{contributions}</span>
                     <p className="text-xs text-muted-foreground">Obj.</p>
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>
@@ -391,6 +398,216 @@ export default function DashboardOverview() {
         onConfirm={handleDelete}
         onClose={() => setDeleteTarget(null)}
       />
+
+      {/* ── Autoren-Panel ── */}
+      {authorPanelUser && (() => {
+        const userName = [authorPanelUser.fields.firstname, authorPanelUser.fields.lastname].filter(Boolean).join(' ') || authorPanelUser.fields.email || '—';
+        const userItems = enrichedWissensobjekte.filter(w =>
+          extractRecordId(w.fields.author) === authorPanelUser.record_id
+        );
+
+        if (authorPanelItem) {
+          // ── Detail-Ansicht ──
+          const item = authorPanelItem;
+          const phaseInfo = PHASES.find(p => p.key === item.fields.phase?.key);
+          const phaseColor = PHASE_NODE_COLORS[item.fields.phase?.key ?? ''] ?? '#94a3b8';
+          const attachment = item.fields.attachment;
+          return (
+            <Dialog open onOpenChange={(o) => { if (!o) { setAuthorPanelUser(null); setAuthorPanelItem(null); } }}>
+              <DialogContent className="max-w-lg p-0 overflow-hidden gap-0">
+                {/* Header */}
+                <div className="px-5 py-4 border-b" style={{ borderColor: phaseColor + '44', background: phaseColor + '12' }}>
+                  <div className="flex items-center gap-2 pr-6 mb-2">
+                    <button
+                      onClick={() => { setAuthorPanelItem(null); setAuthorPanelImageExpanded(false); }}
+                      className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                    >
+                      <IconArrowLeft size={13} className="shrink-0" />
+                      {userName}
+                    </button>
+                  </div>
+                  <DialogHeader>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: phaseColor }} />
+                      <DialogTitle className="text-base leading-snug">{item.fields.title ?? '—'}</DialogTitle>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 mt-1">
+                      {phaseInfo && (
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${phaseInfo.badge}`}>{phaseInfo.label}</span>
+                      )}
+                      {item.fields.knowledge_type && (
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${KNOWLEDGE_TYPE_COLORS[item.fields.knowledge_type.key] ?? 'bg-muted text-muted-foreground'}`}>
+                          {item.fields.knowledge_type.label}
+                        </span>
+                      )}
+                      {item.fields.ai_support && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-indigo-100 text-indigo-700">AI-unterstützt</span>
+                      )}
+                    </div>
+                  </DialogHeader>
+                </div>
+
+                {/* Body */}
+                <div className="px-5 py-4 space-y-4 max-h-[60vh] overflow-y-auto">
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="rounded-lg bg-muted/40 p-2.5 text-center">
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Qualität</p>
+                      <p className="font-bold text-sm">{item.fields.quality_score != null ? `★ ${item.fields.quality_score}` : '—'}</p>
+                    </div>
+                    <div className="rounded-lg bg-muted/40 p-2.5 text-center">
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Version</p>
+                      <p className="font-bold text-sm truncate">{item.fields.version ?? '—'}</p>
+                    </div>
+                    <div className="rounded-lg bg-muted/40 p-2.5 text-center">
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Geändert</p>
+                      <p className="font-bold text-sm truncate">{item.fields.last_modified ? formatDate(item.fields.last_modified) : '—'}</p>
+                    </div>
+                  </div>
+
+                  {(item.fields.ai_summary || item.fields.content) && (
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1.5">
+                        {item.fields.ai_summary ? 'KI-Zusammenfassung' : 'Inhalt'}
+                      </p>
+                      <p className="text-sm text-foreground leading-relaxed">{item.fields.ai_summary ?? item.fields.content}</p>
+                    </div>
+                  )}
+
+                  {attachment && (
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-2">Anhang</p>
+                      {isImageUrl(attachment) ? (
+                        <div className="rounded-xl overflow-hidden border">
+                          {authorPanelImageExpanded ? (
+                            <div>
+                              <img src={attachment} alt={item.fields.title ?? 'Anhang'} className="w-full h-auto max-h-80 object-contain bg-black/5" />
+                              <div className="flex items-center justify-between px-3 py-2 bg-muted/30 border-t">
+                                <button onClick={() => setAuthorPanelImageExpanded(false)} className="text-[11px] text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+                                  <IconPhoto size={12} className="shrink-0" /> Verkleinern
+                                </button>
+                                <a href={attachment} target="_blank" rel="noopener noreferrer" className="text-[11px] text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+                                  <IconExternalLink size={12} className="shrink-0" /> In neuem Tab öffnen
+                                </a>
+                              </div>
+                            </div>
+                          ) : (
+                            <button onClick={() => setAuthorPanelImageExpanded(true)} className="w-full relative group" title="Bild anzeigen">
+                              <img src={attachment} alt={item.fields.title ?? 'Anhang'} className="w-full h-36 object-cover bg-muted/20" />
+                              <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className="bg-white/90 rounded-full p-2"><IconPhoto size={20} className="text-foreground" /></div>
+                              </div>
+                              <div className="flex items-center gap-1.5 px-3 py-2 bg-muted/30 text-[11px] text-muted-foreground">
+                                <IconPhoto size={12} className="shrink-0" />
+                                <span className="flex-1 text-left truncate">Bild anklicken zum Anzeigen</span>
+                              </div>
+                            </button>
+                          )}
+                        </div>
+                      ) : (
+                        <a href={attachment} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 rounded-xl border p-3 hover:bg-accent transition-colors">
+                          <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                            <IconFile size={18} className="text-primary" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{decodeURIComponent(attachment.split('/').pop() ?? 'Dokument')}</p>
+                            <p className="text-xs text-muted-foreground">Klicken zum Öffnen</p>
+                          </div>
+                          <IconExternalLink size={15} className="shrink-0 text-muted-foreground" />
+                        </a>
+                      )}
+                    </div>
+                  )}
+
+                  {item.fields.application_evidence && (
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1.5">Anwendungsnachweise</p>
+                      <p className="text-sm text-foreground leading-relaxed">{item.fields.application_evidence}</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Footer */}
+                <div className="px-5 py-3 border-t bg-muted/20 flex justify-end">
+                  <Button size="sm" onClick={() => {
+                    setEditRecord(item);
+                    setAuthorPanelUser(null);
+                    setAuthorPanelItem(null);
+                    setDialogOpen(true);
+                  }}>
+                    <IconPencil size={14} className="mr-1.5 shrink-0" />
+                    Bearbeiten
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          );
+        }
+
+        // ── Listen-Ansicht ──
+        return (
+          <Dialog open onOpenChange={(o) => { if (!o) setAuthorPanelUser(null); }}>
+            <DialogContent className="max-w-md p-0 overflow-hidden gap-0">
+              <div className="px-5 py-4 border-b">
+                <DialogHeader>
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                      <span className="text-sm font-bold text-primary">
+                        {(authorPanelUser.fields.firstname?.[0] ?? authorPanelUser.fields.lastname?.[0] ?? '?').toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="min-w-0">
+                      <DialogTitle className="text-base">{userName}</DialogTitle>
+                      <p className="text-xs text-muted-foreground mt-0.5">{authorPanelUser.fields.role?.label ?? '—'} · {userItems.length} Beiträge</p>
+                    </div>
+                  </div>
+                </DialogHeader>
+              </div>
+
+              <div className="max-h-[60vh] overflow-y-auto">
+                {userItems.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                    <IconBook size={36} className="opacity-20 mb-2" stroke={1.5} />
+                    <p className="text-sm">Keine Beiträge vorhanden</p>
+                  </div>
+                ) : (
+                  <div className="divide-y">
+                    {userItems.map(item => {
+                      const phaseInfo = PHASES.find(p => p.key === item.fields.phase?.key);
+                      const phaseColor = PHASE_NODE_COLORS[item.fields.phase?.key ?? ''] ?? '#94a3b8';
+                      return (
+                        <button
+                          key={item.record_id}
+                          onClick={() => { setAuthorPanelItem(item); setAuthorPanelImageExpanded(false); }}
+                          className="w-full flex items-start gap-3 px-5 py-3.5 hover:bg-accent transition-colors text-left group"
+                        >
+                          <div className="w-2 h-2 rounded-full shrink-0 mt-1.5" style={{ backgroundColor: phaseColor }} />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold truncate group-hover:text-primary transition-colors">
+                              {item.fields.title ?? '(Kein Titel)'}
+                            </p>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              {phaseInfo && (
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${phaseInfo.badge}`}>{phaseInfo.label}</span>
+                              )}
+                              {item.fields.knowledge_type && (
+                                <span className="text-[10px] text-muted-foreground">{item.fields.knowledge_type.label}</span>
+                              )}
+                            </div>
+                          </div>
+                          {item.fields.quality_score != null && (
+                            <span className="text-xs text-muted-foreground shrink-0 mt-0.5">★ {item.fields.quality_score}</span>
+                          )}
+                          <IconChevronRight size={14} className="text-muted-foreground shrink-0 mt-0.5" />
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
+        );
+      })()}
     </div>
   );
 }
