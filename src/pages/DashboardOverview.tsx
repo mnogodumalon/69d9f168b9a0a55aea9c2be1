@@ -1,6 +1,7 @@
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { enrichWissensobjekte } from '@/lib/enrich';
 import type { EnrichedWissensobjekte } from '@/types/enriched';
+import type { Wissensobjekte, Wissenslandkarten, KartenKnoten, ObjektVerlinkungen } from '@/types/app';
 import { LivingAppsService, extractRecordId } from '@/services/livingAppsService';
 import { formatDate } from '@/lib/formatters';
 import { useState, useMemo } from 'react';
@@ -13,12 +14,17 @@ import { AI_PHOTO_SCAN } from '@/config/ai-features';
 import {
   IconAlertCircle, IconTool, IconRefresh, IconCheck, IconPlus, IconPencil, IconTrash,
   IconBulb, IconBook, IconShare, IconRocket, IconArchive, IconUsers, IconMap,
-  IconStar, IconTrendingUp, IconSearch, IconChevronRight
+  IconStar, IconTrendingUp, IconSearch, IconChevronRight, IconNetwork
 } from '@tabler/icons-react';
 import { Input } from '@/components/ui/input';
 
 const APPGROUP_ID = '69d9f168b9a0a55aea9c2be1';
 const REPAIR_ENDPOINT = '/claude/build/repair';
+
+const SVG_W = 800;
+const SVG_H = 380;
+const PADDING = 64;
+const NODE_R = 22;
 
 const PHASES = [
   { key: 'discovery', label: 'Discovery', icon: IconBulb, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-950/30', border: 'border-amber-200 dark:border-amber-800', badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300' },
@@ -27,6 +33,21 @@ const PHASES = [
   { key: 'application', label: 'Application', icon: IconRocket, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-950/30', border: 'border-emerald-200 dark:border-emerald-800', badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300' },
   { key: 'archived', label: 'Archived', icon: IconArchive, color: 'text-gray-400', bg: 'bg-gray-50 dark:bg-gray-950/30', border: 'border-gray-200 dark:border-gray-700', badge: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' },
 ];
+
+const PHASE_NODE_COLORS: Record<string, string> = {
+  discovery: '#f59e0b',
+  codification: '#3b82f6',
+  dissemination: '#8b5cf6',
+  application: '#10b981',
+  archived: '#9ca3af',
+};
+
+const LINK_TYPE_STYLES: Record<string, { color: string; dashed: boolean }> = {
+  related: { color: '#94a3b8', dashed: false },
+  prerequisite: { color: '#ef4444', dashed: false },
+  extends: { color: '#8b5cf6', dashed: false },
+  see_also: { color: '#f59e0b', dashed: true },
+};
 
 const KNOWLEDGE_TYPE_COLORS: Record<string, string> = {
   explicit: 'bg-sky-100 text-sky-700',
@@ -39,7 +60,8 @@ const KNOWLEDGE_TYPE_COLORS: Record<string, string> = {
 export default function DashboardOverview() {
   const {
     benutzerrollen, wissensobjekte, wissenslandkarten,
-    benutzerrollenMap,
+    kartenKnoten, objektVerlinkungen,
+    benutzerrollenMap, wissensobjekteMap,
     loading, error, fetchAll,
   } = useDashboardData();
 
@@ -125,6 +147,7 @@ export default function DashboardOverview() {
           <IconChevronRight size={16} className="text-muted-foreground shrink-0" />
         </a>
       </div>
+
       {/* KPI Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard
@@ -197,7 +220,6 @@ export default function DashboardOverview() {
           const items = byPhase[phase.key] ?? [];
           return (
             <div key={phase.key} className={`rounded-2xl border ${phase.border} ${phase.bg} overflow-hidden flex flex-col`}>
-              {/* Column Header */}
               <div className="flex items-center gap-2 px-4 py-3 border-b border-inherit">
                 <PhaseIcon size={16} className={`${phase.color} shrink-0`} />
                 <span className="font-semibold text-sm text-foreground truncate">{phase.label}</span>
@@ -205,8 +227,6 @@ export default function DashboardOverview() {
                   {items.length}
                 </span>
               </div>
-
-              {/* Cards */}
               <div className="flex flex-col gap-2 p-3 flex-1 min-h-[120px] max-h-[520px] overflow-y-auto">
                 {items.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground">
@@ -224,8 +244,6 @@ export default function DashboardOverview() {
                   ))
                 )}
               </div>
-
-              {/* Add in column */}
               <div className="px-3 pb-3">
                 <button
                   onClick={() => { setEditRecord(null); setDialogOpen(true); }}
@@ -240,73 +258,50 @@ export default function DashboardOverview() {
         })}
       </div>
 
-      {/* Sidebar Stats: Authors & Maps */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Active Authors */}
-        <div className="rounded-2xl border bg-card p-5 overflow-hidden">
-          <div className="flex items-center gap-2 mb-4">
-            <IconUsers size={16} className="text-muted-foreground shrink-0" />
-            <h3 className="font-semibold text-sm">Autoren & Beiträge</h3>
-          </div>
-          {benutzerrollen.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Keine Benutzer</p>
-          ) : (
-            <div className="space-y-2">
-              {benutzerrollen.slice(0, 6).map(user => {
-                const contributions = wissensobjekte.filter(w =>
-                  extractRecordId(w.fields.author) === user.record_id
-                ).length;
-                return (
-                  <div key={user.record_id} className="flex items-center gap-3 min-w-0">
-                    <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                      <span className="text-xs font-bold text-primary">
-                        {(user.fields.firstname?.[0] ?? user.fields.lastname?.[0] ?? '?').toUpperCase()}
-                      </span>
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium truncate">
-                        {[user.fields.firstname, user.fields.lastname].filter(Boolean).join(' ') || user.fields.email || '—'}
-                      </p>
-                      <p className="text-xs text-muted-foreground">{user.fields.role?.label ?? '—'}</p>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <span className="text-sm font-bold">{contributions}</span>
-                      <p className="text-xs text-muted-foreground">Obj.</p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
+      {/* Wissenslandkarte Visualisierung */}
+      <KnowledgeMapVisualization
+        wissenslandkarten={wissenslandkarten}
+        kartenKnoten={kartenKnoten}
+        objektVerlinkungen={objektVerlinkungen}
+        wissensobjekteMap={wissensobjekteMap}
+      />
 
-        {/* Wissenslandkarten */}
-        <div className="rounded-2xl border bg-card p-5 overflow-hidden">
-          <div className="flex items-center gap-2 mb-4">
-            <IconMap size={16} className="text-muted-foreground shrink-0" />
-            <h3 className="font-semibold text-sm">Wissenslandkarten</h3>
-          </div>
-          {wissenslandkarten.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Keine Karten angelegt</p>
-          ) : (
-            <div className="space-y-2">
-              {wissenslandkarten.slice(0, 6).map(karte => (
-                <div key={karte.record_id} className="flex items-center gap-3 min-w-0">
-                  <div className="w-7 h-7 rounded-lg bg-violet-100 flex items-center justify-center shrink-0">
-                    <IconMap size={14} className="text-violet-600" />
+      {/* Authors */}
+      <div className="rounded-2xl border bg-card p-5 overflow-hidden">
+        <div className="flex items-center gap-2 mb-4">
+          <IconUsers size={16} className="text-muted-foreground shrink-0" />
+          <h3 className="font-semibold text-sm">Autoren & Beiträge</h3>
+        </div>
+        {benutzerrollen.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Keine Benutzer</p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {benutzerrollen.slice(0, 6).map(user => {
+              const contributions = wissensobjekte.filter(w =>
+                extractRecordId(w.fields.author) === user.record_id
+              ).length;
+              return (
+                <div key={user.record_id} className="flex items-center gap-3 min-w-0 rounded-xl border p-3">
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <span className="text-xs font-bold text-primary">
+                      {(user.fields.firstname?.[0] ?? user.fields.lastname?.[0] ?? '?').toUpperCase()}
+                    </span>
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium truncate">{karte.fields.map_title ?? '—'}</p>
-                    <p className="text-xs text-muted-foreground">{karte.fields.map_type?.label ?? '—'}</p>
+                    <p className="text-sm font-medium truncate">
+                      {[user.fields.firstname, user.fields.lastname].filter(Boolean).join(' ') || user.fields.email || '—'}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{user.fields.role?.label ?? '—'}</p>
                   </div>
-                  {karte.fields.map_created_at && (
-                    <span className="text-xs text-muted-foreground shrink-0">{formatDate(karte.fields.map_created_at)}</span>
-                  )}
+                  <div className="text-right shrink-0">
+                    <span className="text-sm font-bold">{contributions}</span>
+                    <p className="text-xs text-muted-foreground">Obj.</p>
+                  </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Dialogs */}
@@ -330,6 +325,401 @@ export default function DashboardOverview() {
   );
 }
 
+// ─── Wissenslandkarte Graph Visualisierung ───────────────────────────────────
+
+function KnowledgeMapVisualization({
+  wissenslandkarten,
+  kartenKnoten,
+  objektVerlinkungen,
+  wissensobjekteMap,
+}: {
+  wissenslandkarten: Wissenslandkarten[];
+  kartenKnoten: KartenKnoten[];
+  objektVerlinkungen: ObjektVerlinkungen[];
+  wissensobjekteMap: Map<string, Wissensobjekte>;
+}) {
+  const [selectedMapId, setSelectedMapId] = useState<string>('');
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+
+  const effectiveMapId = selectedMapId || wissenslandkarten[0]?.record_id || '';
+  const selectedMap = wissenslandkarten.find(m => m.record_id === effectiveMapId);
+
+  const mapNodes = useMemo(
+    () => kartenKnoten.filter(kn => extractRecordId(kn.fields.mn_map) === effectiveMapId),
+    [kartenKnoten, effectiveMapId]
+  );
+
+  const nodeData = useMemo(() => {
+    return mapNodes.map(kn => {
+      const objId = extractRecordId(kn.fields.mn_item);
+      const obj = objId ? wissensobjekteMap.get(objId) : undefined;
+      return { kn, obj, objId };
+    }).filter((n): n is { kn: KartenKnoten; obj: Wissensobjekte; objId: string } => !!n.obj && !!n.objId);
+  }, [mapNodes, wissensobjekteMap]);
+
+  const nodeObjIds = useMemo(() => new Set(nodeData.map(n => n.objId)), [nodeData]);
+
+  const edges = useMemo(() =>
+    objektVerlinkungen.filter(e => {
+      const from = extractRecordId(e.fields.item_from);
+      const to = extractRecordId(e.fields.item_to);
+      return !!from && !!to && nodeObjIds.has(from) && nodeObjIds.has(to);
+    }),
+    [objektVerlinkungen, nodeObjIds]
+  );
+
+  const positions = useMemo(() => {
+    const n = nodeData.length;
+    const posMap = new Map<string, { x: number; y: number }>();
+    if (n === 0) return posMap;
+
+    const hasPos = nodeData.some(d => d.kn.fields.pos_x != null && d.kn.fields.pos_y != null);
+
+    if (hasPos) {
+      const xs = nodeData.map(d => d.kn.fields.pos_x ?? 0);
+      const ys = nodeData.map(d => d.kn.fields.pos_y ?? 0);
+      const minX = Math.min(...xs), maxX = Math.max(...xs);
+      const minY = Math.min(...ys), maxY = Math.max(...ys);
+      const rangeX = maxX - minX || 1;
+      const rangeY = maxY - minY || 1;
+      nodeData.forEach(d => {
+        posMap.set(d.objId, {
+          x: ((d.kn.fields.pos_x ?? 0) - minX) / rangeX * (SVG_W - 2 * PADDING) + PADDING,
+          y: ((d.kn.fields.pos_y ?? 0) - minY) / rangeY * (SVG_H - 2 * PADDING) + PADDING,
+        });
+      });
+    } else {
+      const cx = SVG_W / 2, cy = SVG_H / 2;
+      const r = Math.min(SVG_W, SVG_H) / 2 - PADDING - NODE_R;
+      nodeData.forEach((d, i) => {
+        const angle = n === 1 ? 0 : (i / n) * 2 * Math.PI - Math.PI / 2;
+        posMap.set(d.objId, {
+          x: n === 1 ? cx : cx + r * Math.cos(angle),
+          y: n === 1 ? cy : cy + r * Math.sin(angle),
+        });
+      });
+    }
+    return posMap;
+  }, [nodeData]);
+
+  const selectedNode = selectedNodeId ? nodeData.find(n => n.objId === selectedNodeId) ?? null : null;
+  const selectedNodeConnections = useMemo(() =>
+    selectedNodeId ? edges.filter(e => {
+      const from = extractRecordId(e.fields.item_from);
+      const to = extractRecordId(e.fields.item_to);
+      return from === selectedNodeId || to === selectedNodeId;
+    }) : [],
+    [edges, selectedNodeId]
+  );
+
+  const activePhasesInMap = useMemo(() =>
+    PHASES.filter(p => nodeData.some(n => n.obj.fields.phase?.key === p.key)),
+    [nodeData]
+  );
+
+  return (
+    <div className="rounded-2xl border bg-card overflow-hidden">
+      {/* Header */}
+      <div className="flex flex-wrap items-center gap-3 px-5 py-4 border-b">
+        <IconNetwork size={16} className="text-muted-foreground shrink-0" />
+        <h3 className="font-semibold text-sm">Wissenslandkarte</h3>
+        {wissenslandkarten.length > 1 && (
+          <select
+            value={effectiveMapId}
+            onChange={e => { setSelectedMapId(e.target.value); setSelectedNodeId(null); }}
+            className="ml-auto text-xs border border-border rounded-lg px-2 py-1.5 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 max-w-[220px] truncate"
+          >
+            {wissenslandkarten.map(m => (
+              <option key={m.record_id} value={m.record_id}>
+                {m.fields.map_title ?? 'Unbenannte Karte'}{m.fields.map_type ? ` · ${m.fields.map_type.label}` : ''}
+              </option>
+            ))}
+          </select>
+        )}
+        {wissenslandkarten.length === 1 && selectedMap && (
+          <div className="ml-auto flex items-center gap-2">
+            {selectedMap.fields.map_type && (
+              <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                {selectedMap.fields.map_type.label}
+              </span>
+            )}
+            <span className="text-sm font-medium truncate max-w-[180px]">{selectedMap.fields.map_title ?? '—'}</span>
+          </div>
+        )}
+      </div>
+
+      {wissenslandkarten.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+          <IconNetwork size={48} className="opacity-20 mb-3" stroke={1.5} />
+          <p className="text-sm">Noch keine Wissenslandkarten angelegt</p>
+        </div>
+      ) : nodeData.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+          <IconMap size={48} className="opacity-20 mb-3" stroke={1.5} />
+          <p className="text-sm font-medium">{selectedMap?.fields.map_title ?? 'Karte'}</p>
+          <p className="text-xs mt-1">Noch keine Knoten in dieser Landkarte</p>
+          {selectedMap?.fields.map_description && (
+            <p className="text-xs mt-2 max-w-xs text-center opacity-70">{selectedMap.fields.map_description}</p>
+          )}
+        </div>
+      ) : (
+        <div className="flex flex-col lg:flex-row">
+          {/* SVG Canvas */}
+          <div className="flex-1 min-w-0 bg-muted/10 relative overflow-hidden">
+            <svg
+              viewBox={`0 0 ${SVG_W} ${SVG_H}`}
+              className="w-full"
+              style={{ height: '380px', display: 'block' }}
+            >
+              {/* Edge lines */}
+              {edges.map(e => {
+                const fromId = extractRecordId(e.fields.item_from);
+                const toId = extractRecordId(e.fields.item_to);
+                if (!fromId || !toId) return null;
+                const p1 = positions.get(fromId);
+                const p2 = positions.get(toId);
+                if (!p1 || !p2) return null;
+                const typeKey = e.fields.link_type?.key ?? 'related';
+                const style = LINK_TYPE_STYLES[typeKey] ?? LINK_TYPE_STYLES.related;
+                const strength = Math.max(1, Math.min(4, e.fields.link_strength ?? 1));
+                const isHighlighted = selectedNodeId === fromId || selectedNodeId === toId;
+                return (
+                  <line
+                    key={e.record_id}
+                    x1={p1.x} y1={p1.y}
+                    x2={p2.x} y2={p2.y}
+                    stroke={style.color}
+                    strokeWidth={isHighlighted ? strength + 1.5 : strength}
+                    strokeOpacity={selectedNodeId ? (isHighlighted ? 0.85 : 0.2) : 0.45}
+                    strokeDasharray={style.dashed ? '7,4' : undefined}
+                    strokeLinecap="round"
+                  />
+                );
+              })}
+
+              {/* Arrowhead markers */}
+              <defs>
+                {Object.entries(LINK_TYPE_STYLES).map(([key, s]) => (
+                  <marker
+                    key={key}
+                    id={`arrow-${key}`}
+                    markerWidth="8" markerHeight="8"
+                    refX="6" refY="3"
+                    orient="auto"
+                  >
+                    <path d="M0,0 L0,6 L8,3 z" fill={s.color} fillOpacity={0.6} />
+                  </marker>
+                ))}
+              </defs>
+
+              {/* Nodes */}
+              {nodeData.map(({ kn, obj, objId }) => {
+                const pos = positions.get(objId);
+                if (!pos) return null;
+                const phaseKey = obj.fields.phase?.key ?? 'discovery';
+                const color = PHASE_NODE_COLORS[phaseKey] ?? '#94a3b8';
+                const isSelected = selectedNodeId === objId;
+                const isDimmed = selectedNodeId !== null && !isSelected && !selectedNodeConnections.some(e => {
+                  const from = extractRecordId(e.fields.item_from);
+                  const to = extractRecordId(e.fields.item_to);
+                  return from === objId || to === objId;
+                });
+                const label = kn.fields.node_label || obj.fields.title || '—';
+                const shortLabel = label.length > 18 ? label.slice(0, 16) + '…' : label;
+
+                return (
+                  <g
+                    key={objId}
+                    transform={`translate(${pos.x},${pos.y})`}
+                    onClick={() => setSelectedNodeId(prev => prev === objId ? null : objId)}
+                    style={{ cursor: 'pointer' }}
+                    opacity={isDimmed ? 0.3 : 1}
+                  >
+                    {/* Selection ring */}
+                    {isSelected && (
+                      <circle r={NODE_R + 8} fill={color} fillOpacity={0.15} />
+                    )}
+                    {/* Main circle */}
+                    <circle
+                      r={NODE_R}
+                      fill={color}
+                      fillOpacity={isSelected ? 1 : 0.82}
+                      stroke="white"
+                      strokeWidth={isSelected ? 3 : 1.5}
+                    />
+                    {/* Quality score inside */}
+                    {obj.fields.quality_score != null && (
+                      <text
+                        textAnchor="middle"
+                        dy="0.35em"
+                        fontSize={11}
+                        fontWeight="700"
+                        fill="white"
+                        style={{ pointerEvents: 'none', userSelect: 'none' }}
+                      >
+                        {obj.fields.quality_score}
+                      </text>
+                    )}
+                    {/* Label below */}
+                    <text
+                      textAnchor="middle"
+                      y={NODE_R + 16}
+                      fontSize={10}
+                      fontWeight={isSelected ? '700' : '500'}
+                      fill={isSelected ? color : '#64748b'}
+                      style={{ pointerEvents: 'none', userSelect: 'none' }}
+                    >
+                      {shortLabel}
+                    </text>
+                  </g>
+                );
+              })}
+            </svg>
+          </div>
+
+          {/* Side Panel */}
+          <div className="w-full lg:w-60 xl:w-64 shrink-0 border-t lg:border-t-0 lg:border-l bg-card">
+            {selectedNode ? (
+              <div className="p-4 space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <h4 className="font-semibold text-sm leading-snug">{selectedNode.obj.fields.title ?? '—'}</h4>
+                  <button
+                    onClick={() => setSelectedNodeId(null)}
+                    className="text-muted-foreground hover:text-foreground shrink-0 p-0.5 rounded"
+                    title="Schließen"
+                  >
+                    ×
+                  </button>
+                </div>
+
+                {selectedNode.obj.fields.phase && (() => {
+                  const phase = PHASES.find(p => p.key === selectedNode.obj.fields.phase?.key);
+                  return phase ? (
+                    <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${phase.badge}`}>
+                      {selectedNode.obj.fields.phase.label}
+                    </span>
+                  ) : null;
+                })()}
+
+                {selectedNode.obj.fields.knowledge_type && (
+                  <div>
+                    <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${KNOWLEDGE_TYPE_COLORS[selectedNode.obj.fields.knowledge_type.key] ?? 'bg-muted text-muted-foreground'}`}>
+                      {selectedNode.obj.fields.knowledge_type.label}
+                    </span>
+                  </div>
+                )}
+
+                {selectedNode.obj.fields.quality_score != null && (
+                  <div className="text-xs">
+                    <span className="text-muted-foreground">Qualität: </span>
+                    <span className="font-semibold">★ {selectedNode.obj.fields.quality_score}</span>
+                  </div>
+                )}
+
+                {selectedNode.kn.fields.node_label && selectedNode.kn.fields.node_label !== selectedNode.obj.fields.title && (
+                  <div className="text-xs text-muted-foreground italic">
+                    „{selectedNode.kn.fields.node_label}"
+                  </div>
+                )}
+
+                {selectedNode.obj.fields.last_modified && (
+                  <div className="text-xs text-muted-foreground">
+                    Zuletzt: {formatDate(selectedNode.obj.fields.last_modified)}
+                  </div>
+                )}
+
+                {selectedNodeConnections.length > 0 && (
+                  <div className="border-t pt-3 space-y-1.5">
+                    <p className="text-xs font-medium text-muted-foreground">
+                      {selectedNodeConnections.length} Verbindung{selectedNodeConnections.length !== 1 ? 'en' : ''}
+                    </p>
+                    {selectedNodeConnections.slice(0, 4).map(e => {
+                      const fromId = extractRecordId(e.fields.item_from);
+                      const toId = extractRecordId(e.fields.item_to);
+                      const otherId = fromId === selectedNodeId ? toId : fromId;
+                      const otherNode = otherId ? nodeData.find(n => n.objId === otherId) : null;
+                      const style = LINK_TYPE_STYLES[e.fields.link_type?.key ?? 'related'] ?? LINK_TYPE_STYLES.related;
+                      return (
+                        <div key={e.record_id} className="flex items-center gap-2 text-xs">
+                          <svg width="16" height="10" className="shrink-0">
+                            <line x1="0" y1="5" x2="16" y2="5"
+                              stroke={style.color}
+                              strokeWidth="2"
+                              strokeDasharray={style.dashed ? '4,3' : undefined}
+                            />
+                          </svg>
+                          <span className="truncate text-muted-foreground">
+                            {otherNode?.obj.fields.title ?? '—'}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="p-4 space-y-4">
+                {selectedMap?.fields.map_description && (
+                  <p className="text-xs text-muted-foreground leading-relaxed border-b pb-3">
+                    {selectedMap.fields.map_description}
+                  </p>
+                )}
+
+                <div>
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Phasen</p>
+                  <div className="space-y-1.5">
+                    {activePhasesInMap.map(p => (
+                      <div key={p.key} className="flex items-center gap-2">
+                        <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: PHASE_NODE_COLORS[p.key] }} />
+                        <span className="text-xs">{p.label}</span>
+                        <span className="text-xs text-muted-foreground ml-auto">
+                          {nodeData.filter(n => n.obj.fields.phase?.key === p.key).length}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Verbindungstypen</p>
+                  <div className="space-y-1.5">
+                    {Object.entries(LINK_TYPE_STYLES).map(([key, s]) => {
+                      const count = edges.filter(e => (e.fields.link_type?.key ?? 'related') === key).length;
+                      if (count === 0) return null;
+                      return (
+                        <div key={key} className="flex items-center gap-2">
+                          <svg width="18" height="10" className="shrink-0">
+                            <line x1="0" y1="5" x2="18" y2="5"
+                              stroke={s.color}
+                              strokeWidth="2"
+                              strokeDasharray={s.dashed ? '4,3' : undefined}
+                            />
+                          </svg>
+                          <span className="text-xs capitalize">{key.replace('_', ' ')}</span>
+                          <span className="text-xs text-muted-foreground ml-auto">{count}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="pt-1">
+                  <p className="text-[10px] text-muted-foreground">
+                    {nodeData.length} Knoten · {edges.length} Verbindungen
+                  </p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">Knoten anklicken für Details</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Knowledge Card ──────────────────────────────────────────────────────────
+
 function KnowledgeCard({
   item,
   onEdit,
@@ -346,7 +736,6 @@ function KnowledgeCard({
 
   return (
     <div className="rounded-xl bg-background border border-border p-3 flex flex-col gap-2 hover:shadow-sm transition-shadow">
-      {/* Title + actions */}
       <div className="flex items-start gap-2 min-w-0">
         <p className="text-sm font-semibold leading-snug flex-1 min-w-0 truncate">
           {item.fields.title ?? '(Kein Titel)'}
@@ -369,7 +758,6 @@ function KnowledgeCard({
         </div>
       </div>
 
-      {/* Badges row */}
       <div className="flex flex-wrap gap-1">
         {typeLabel && (
           <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${typeColorClass}`}>
@@ -388,7 +776,6 @@ function KnowledgeCard({
         )}
       </div>
 
-      {/* Meta */}
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
         {item.authorName && (
           <span className="truncate">{item.authorName}</span>
@@ -400,6 +787,8 @@ function KnowledgeCard({
     </div>
   );
 }
+
+// ─── Skeleton & Error ────────────────────────────────────────────────────────
 
 function DashboardSkeleton() {
   return (
