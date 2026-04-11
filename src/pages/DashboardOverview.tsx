@@ -14,7 +14,8 @@ import { AI_PHOTO_SCAN } from '@/config/ai-features';
 import {
   IconAlertCircle, IconTool, IconRefresh, IconCheck, IconPlus, IconPencil, IconTrash,
   IconBulb, IconBook, IconShare, IconRocket, IconArchive, IconUsers, IconMap,
-  IconStar, IconTrendingUp, IconSearch, IconChevronRight, IconNetwork
+  IconStar, IconTrendingUp, IconSearch, IconChevronRight, IconNetwork,
+  IconChevronDown, IconChevronLeft
 } from '@tabler/icons-react';
 import { Input } from '@/components/ui/input';
 
@@ -93,6 +94,9 @@ export default function DashboardOverview() {
     }
     return map;
   }, [filteredItems]);
+
+  const [expandedPhases, setExpandedPhases] = useState<Set<string>>(new Set());
+  const [phasePages, setPhasePages] = useState<Record<string, number>>({});
 
   const activeItems = useMemo(() => enrichedWissensobjekte.filter(i => i.fields.phase?.key !== 'archived'), [enrichedWissensobjekte]);
   const avgQuality = useMemo(() => {
@@ -218,41 +222,98 @@ export default function DashboardOverview() {
         {visiblePhases.map(phase => {
           const PhaseIcon = phase.icon;
           const items = byPhase[phase.key] ?? [];
+          const isOpen = expandedPhases.has(phase.key);
+          const page = phasePages[phase.key] ?? 0;
+          const PAGE_SIZE = 5;
+          const totalPages = Math.ceil(items.length / PAGE_SIZE);
+          const pageItems = items.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
+
+          const togglePhase = () => {
+            setExpandedPhases(prev => {
+              const next = new Set(prev);
+              if (next.has(phase.key)) next.delete(phase.key);
+              else next.add(phase.key);
+              return next;
+            });
+          };
+
+          const setPage = (p: number) =>
+            setPhasePages(prev => ({ ...prev, [phase.key]: p }));
+
           return (
             <div key={phase.key} className={`rounded-2xl border ${phase.border} ${phase.bg} overflow-hidden flex flex-col`}>
-              <div className="flex items-center gap-2 px-4 py-3 border-b border-inherit">
+              {/* Clickable Header */}
+              <button
+                onClick={togglePhase}
+                className="flex items-center gap-2 px-4 py-3 w-full text-left hover:brightness-95 transition-all"
+              >
                 <PhaseIcon size={16} className={`${phase.color} shrink-0`} />
                 <span className="font-semibold text-sm text-foreground truncate">{phase.label}</span>
-                <span className={`ml-auto text-xs font-semibold px-2 py-0.5 rounded-full ${phase.badge}`}>
+                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${phase.badge}`}>
                   {items.length}
                 </span>
-              </div>
-              <div className="flex flex-col gap-2 p-3 flex-1 min-h-[120px] max-h-[520px] overflow-y-auto">
-                {items.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground">
-                    <PhaseIcon size={28} className="opacity-25 mb-2" stroke={1.5} />
-                    <span className="text-xs">Keine Einträge</span>
+                <IconChevronDown
+                  size={14}
+                  className={`ml-auto text-muted-foreground shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+                />
+              </button>
+
+              {/* Collapsible Content */}
+              {isOpen && (
+                <>
+                  <div className="flex flex-col gap-2 p-3 border-t border-inherit">
+                    {items.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground">
+                        <PhaseIcon size={28} className="opacity-25 mb-2" stroke={1.5} />
+                        <span className="text-xs">Keine Einträge</span>
+                      </div>
+                    ) : (
+                      pageItems.map(item => (
+                        <KnowledgeCard
+                          key={item.record_id}
+                          item={item}
+                          onEdit={() => { setEditRecord(item); setDialogOpen(true); }}
+                          onDelete={() => setDeleteTarget(item)}
+                        />
+                      ))
+                    )}
                   </div>
-                ) : (
-                  items.map(item => (
-                    <KnowledgeCard
-                      key={item.record_id}
-                      item={item}
-                      onEdit={() => { setEditRecord(item); setDialogOpen(true); }}
-                      onDelete={() => setDeleteTarget(item)}
-                    />
-                  ))
-                )}
-              </div>
-              <div className="px-3 pb-3">
-                <button
-                  onClick={() => { setEditRecord(null); setDialogOpen(true); }}
-                  className="w-full text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 py-1.5 px-2 rounded-lg hover:bg-background/60 transition-colors"
-                >
-                  <IconPlus size={13} className="shrink-0" />
-                  Hinzufügen
-                </button>
-              </div>
+
+                  {/* Pagination */}
+                  {totalPages > 1 && (
+                    <div className="flex items-center justify-between px-3 py-2 border-t border-inherit">
+                      <button
+                        onClick={() => setPage(Math.max(0, page - 1))}
+                        disabled={page === 0}
+                        className="p-1 rounded hover:bg-background/60 disabled:opacity-30 transition-colors"
+                      >
+                        <IconChevronLeft size={14} className="text-muted-foreground" />
+                      </button>
+                      <span className="text-xs text-muted-foreground">
+                        {page + 1} / {totalPages}
+                      </span>
+                      <button
+                        onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
+                        disabled={page >= totalPages - 1}
+                        className="p-1 rounded hover:bg-background/60 disabled:opacity-30 transition-colors"
+                      >
+                        <IconChevronDown size={14} className="text-muted-foreground -rotate-90" />
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Add in column */}
+                  <div className="px-3 pb-3">
+                    <button
+                      onClick={() => { setEditRecord(null); setDialogOpen(true); }}
+                      className="w-full text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 py-1.5 px-2 rounded-lg hover:bg-background/60 transition-colors"
+                    >
+                      <IconPlus size={13} className="shrink-0" />
+                      Hinzufügen
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           );
         })}
