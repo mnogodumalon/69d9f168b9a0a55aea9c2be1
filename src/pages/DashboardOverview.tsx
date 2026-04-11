@@ -15,9 +15,10 @@ import {
   IconAlertCircle, IconTool, IconRefresh, IconCheck, IconPlus, IconPencil, IconTrash,
   IconBulb, IconBook, IconShare, IconRocket, IconArchive, IconUsers, IconMap,
   IconStar, IconTrendingUp, IconSearch, IconChevronRight, IconNetwork,
-  IconChevronDown, IconChevronLeft
+  IconChevronDown, IconChevronLeft, IconExternalLink, IconFile, IconPhoto, IconX
 } from '@tabler/icons-react';
 import { Input } from '@/components/ui/input';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 
 const APPGROUP_ID = '69d9f168b9a0a55aea9c2be1';
 const REPAIR_ENDPOINT = '/claude/build/repair';
@@ -57,6 +58,10 @@ const KNOWLEDGE_TYPE_COLORS: Record<string, string> = {
   process: 'bg-teal-100 text-teal-700',
   lesson_learned: 'bg-rose-100 text-rose-700',
 };
+
+function isImageUrl(url: string): boolean {
+  return /\.(jpg|jpeg|png|gif|webp|svg|bmp)(\?.*)?$/i.test(url);
+}
 
 export default function DashboardOverview() {
   const {
@@ -524,9 +529,9 @@ function KnowledgeMapVisualization({
           )}
         </div>
       ) : (
-        <div className="flex flex-col lg:flex-row">
-          {/* SVG Canvas */}
-          <div className="flex-1 min-w-0 bg-muted/10 relative overflow-hidden">
+        <div>
+          {/* SVG Canvas — full width */}
+          <div className="bg-muted/10 relative overflow-hidden">
             <svg
               viewBox={`0 0 ${SVG_W} ${SVG_H}`}
               className="w-full"
@@ -636,142 +641,264 @@ function KnowledgeMapVisualization({
                 );
               })}
             </svg>
-          </div>
 
-          {/* Side Panel */}
-          <div className="w-full lg:w-60 xl:w-64 shrink-0 border-t lg:border-t-0 lg:border-l bg-card">
-            {selectedNode ? (
-              <div className="p-4 space-y-3">
-                <div className="flex items-start justify-between gap-2">
-                  <h4 className="font-semibold text-sm leading-snug">{selectedNode.obj.fields.title ?? '—'}</h4>
-                  <button
-                    onClick={() => setSelectedNodeId(null)}
-                    className="text-muted-foreground hover:text-foreground shrink-0 p-0.5 rounded"
-                    title="Schließen"
-                  >
-                    ×
-                  </button>
-                </div>
-
-                {selectedNode.obj.fields.phase && (() => {
-                  const phase = PHASES.find(p => p.key === selectedNode.obj.fields.phase?.key);
-                  return phase ? (
-                    <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${phase.badge}`}>
-                      {selectedNode.obj.fields.phase.label}
-                    </span>
-                  ) : null;
-                })()}
-
-                {selectedNode.obj.fields.knowledge_type && (
-                  <div>
-                    <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${KNOWLEDGE_TYPE_COLORS[selectedNode.obj.fields.knowledge_type.key] ?? 'bg-muted text-muted-foreground'}`}>
-                      {selectedNode.obj.fields.knowledge_type.label}
-                    </span>
-                  </div>
-                )}
-
-                {selectedNode.obj.fields.quality_score != null && (
-                  <div className="text-xs">
-                    <span className="text-muted-foreground">Qualität: </span>
-                    <span className="font-semibold">★ {selectedNode.obj.fields.quality_score}</span>
-                  </div>
-                )}
-
-                {selectedNode.kn.fields.node_label && selectedNode.kn.fields.node_label !== selectedNode.obj.fields.title && (
-                  <div className="text-xs text-muted-foreground italic">
-                    „{selectedNode.kn.fields.node_label}"
-                  </div>
-                )}
-
-                {selectedNode.obj.fields.last_modified && (
-                  <div className="text-xs text-muted-foreground">
-                    Zuletzt: {formatDate(selectedNode.obj.fields.last_modified)}
-                  </div>
-                )}
-
-                {selectedNodeConnections.length > 0 && (
-                  <div className="border-t pt-3 space-y-1.5">
-                    <p className="text-xs font-medium text-muted-foreground">
-                      {selectedNodeConnections.length} Verbindung{selectedNodeConnections.length !== 1 ? 'en' : ''}
-                    </p>
-                    {selectedNodeConnections.slice(0, 4).map(e => {
-                      const fromId = extractRecordId(e.fields.item_from);
-                      const toId = extractRecordId(e.fields.item_to);
-                      const otherId = fromId === selectedNodeId ? toId : fromId;
-                      const otherNode = otherId ? nodeData.find(n => n.objId === otherId) : null;
-                      const style = LINK_TYPE_STYLES[e.fields.link_type?.key ?? 'related'] ?? LINK_TYPE_STYLES.related;
-                      return (
-                        <div key={e.record_id} className="flex items-center gap-2 text-xs">
-                          <svg width="16" height="10" className="shrink-0">
-                            <line x1="0" y1="5" x2="16" y2="5"
-                              stroke={style.color}
-                              strokeWidth="2"
-                              strokeDasharray={style.dashed ? '4,3' : undefined}
-                            />
-                          </svg>
-                          <span className="truncate text-muted-foreground">
-                            {otherNode?.obj.fields.title ?? '—'}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="p-4 space-y-4">
-                {selectedMap?.fields.map_description && (
-                  <p className="text-xs text-muted-foreground leading-relaxed border-b pb-3">
-                    {selectedMap.fields.map_description}
-                  </p>
-                )}
-
-                <div>
-                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Phasen</p>
-                  <div className="space-y-1.5">
-                    {activePhasesInMap.map(p => (
-                      <div key={p.key} className="flex items-center gap-2">
-                        <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: PHASE_NODE_COLORS[p.key] }} />
-                        <span className="text-xs">{p.label}</span>
-                        <span className="text-xs text-muted-foreground ml-auto">
-                          {nodeData.filter(n => n.obj.fields.phase?.key === p.key).length}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Verbindungstypen</p>
-                  <div className="space-y-1.5">
-                    {Object.entries(LINK_TYPE_STYLES).map(([key, s]) => {
-                      const count = edges.filter(e => (e.fields.link_type?.key ?? 'related') === key).length;
-                      if (count === 0) return null;
-                      return (
-                        <div key={key} className="flex items-center gap-2">
-                          <svg width="18" height="10" className="shrink-0">
-                            <line x1="0" y1="5" x2="18" y2="5"
-                              stroke={s.color}
-                              strokeWidth="2"
-                              strokeDasharray={s.dashed ? '4,3' : undefined}
-                            />
-                          </svg>
-                          <span className="text-xs capitalize">{key.replace('_', ' ')}</span>
-                          <span className="text-xs text-muted-foreground ml-auto">{count}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="pt-1">
-                  <p className="text-[10px] text-muted-foreground">
-                    {nodeData.length} Knoten · {edges.length} Verbindungen
-                  </p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">Knoten anklicken für Details</p>
-                </div>
+            {/* Hint — only when nothing selected */}
+            {!selectedNodeId && (
+              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 pointer-events-none">
+                <span className="text-[11px] text-muted-foreground bg-card/90 px-3 py-1 rounded-full border border-border/60 shadow-sm">
+                  Knoten anklicken für Details
+                </span>
               </div>
             )}
+          </div>
+
+          {/* ── Node Info Card — erscheint nach Klick ── */}
+          {selectedNode && (() => {
+            const phaseInfo = PHASES.find(p => p.key === selectedNode.obj.fields.phase?.key);
+            const phaseColor = PHASE_NODE_COLORS[selectedNode.obj.fields.phase?.key ?? ''] ?? '#94a3b8';
+            return (
+              <div className="border-t" style={{ borderColor: phaseColor + '55' }}>
+                <div className="p-4" style={{ background: phaseColor + '0d' }}>
+                  {/* Title row */}
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: phaseColor }} />
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <button
+                            className="font-bold text-base leading-snug truncate text-left hover:underline hover:text-primary transition-colors min-w-0"
+                            title="Details anzeigen"
+                          >
+                            {selectedNode.obj.fields.title ?? '—'}
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-80 max-h-[70vh] overflow-y-auto p-0" align="start" sideOffset={8}>
+                          {/* Popover Header */}
+                          <div className="p-4 border-b" style={{ borderColor: phaseColor + '44', background: phaseColor + '11' }}>
+                            <div className="flex items-start gap-2 mb-2">
+                              <div className="w-2.5 h-2.5 rounded-full shrink-0 mt-1" style={{ backgroundColor: phaseColor }} />
+                              <p className="font-bold text-sm leading-snug flex-1">{selectedNode.obj.fields.title ?? '—'}</p>
+                            </div>
+                            <div className="flex flex-wrap gap-1">
+                              {phaseInfo && (
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${phaseInfo.badge}`}>
+                                  {phaseInfo.label}
+                                </span>
+                              )}
+                              {selectedNode.obj.fields.knowledge_type && (
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${KNOWLEDGE_TYPE_COLORS[selectedNode.obj.fields.knowledge_type.key] ?? 'bg-muted text-muted-foreground'}`}>
+                                  {selectedNode.obj.fields.knowledge_type.label}
+                                </span>
+                              )}
+                              {selectedNode.obj.fields.ai_support && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-indigo-100 text-indigo-700">
+                                  AI-unterstützt
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="p-4 space-y-3">
+                            {/* AI Summary / Content */}
+                            {(selectedNode.obj.fields.ai_summary || selectedNode.obj.fields.content) && (
+                              <div>
+                                <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">
+                                  {selectedNode.obj.fields.ai_summary ? 'KI-Zusammenfassung' : 'Inhalt'}
+                                </p>
+                                <p className="text-xs text-foreground leading-relaxed">
+                                  {selectedNode.obj.fields.ai_summary ?? selectedNode.obj.fields.content}
+                                </p>
+                              </div>
+                            )}
+
+                            {/* Attachment */}
+                            {selectedNode.obj.fields.attachment && (
+                              <div>
+                                <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1.5">
+                                  Anhang
+                                </p>
+                                {isImageUrl(selectedNode.obj.fields.attachment) ? (
+                                  <a
+                                    href={selectedNode.obj.fields.attachment}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="block rounded-lg overflow-hidden border hover:opacity-90 transition-opacity"
+                                    title="Bild in voller Größe öffnen"
+                                  >
+                                    <img
+                                      src={selectedNode.obj.fields.attachment}
+                                      alt={selectedNode.obj.fields.title ?? 'Anhang'}
+                                      className="w-full h-auto max-h-48 object-contain bg-muted/20"
+                                    />
+                                    <div className="flex items-center gap-1.5 px-2 py-1.5 bg-muted/30 text-[10px] text-muted-foreground">
+                                      <IconPhoto size={12} className="shrink-0" />
+                                      <span className="truncate flex-1">Bild öffnen</span>
+                                      <IconExternalLink size={11} className="shrink-0" />
+                                    </div>
+                                  </a>
+                                ) : (
+                                  <a
+                                    href={selectedNode.obj.fields.attachment}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-2 rounded-lg border p-2.5 hover:bg-accent transition-colors text-xs"
+                                  >
+                                    <IconFile size={16} className="shrink-0 text-muted-foreground" />
+                                    <span className="flex-1 min-w-0 truncate">
+                                      {selectedNode.obj.fields.attachment.split('/').pop() ?? 'Dokument öffnen'}
+                                    </span>
+                                    <IconExternalLink size={13} className="shrink-0 text-muted-foreground" />
+                                  </a>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Meta */}
+                            <div className="grid grid-cols-2 gap-2 pt-1 border-t">
+                              {selectedNode.obj.fields.quality_score != null && (
+                                <div>
+                                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Qualität</p>
+                                  <p className="text-sm font-bold">★ {selectedNode.obj.fields.quality_score}</p>
+                                </div>
+                              )}
+                              {selectedNode.obj.fields.version && (
+                                <div>
+                                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Version</p>
+                                  <p className="text-sm font-semibold">{selectedNode.obj.fields.version}</p>
+                                </div>
+                              )}
+                              {selectedNode.obj.fields.last_modified && (
+                                <div className="col-span-2">
+                                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Geändert</p>
+                                  <p className="text-xs font-medium">{formatDate(selectedNode.obj.fields.last_modified)}</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                    <button
+                      onClick={() => setSelectedNodeId(null)}
+                      className="shrink-0 text-muted-foreground hover:text-foreground w-6 h-6 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+                      title="Schließen"
+                    >
+                      <IconX size={14} />
+                    </button>
+                  </div>
+
+                  {/* Badge row */}
+                  <div className="flex flex-wrap gap-1.5 mb-4">
+                    {phaseInfo && (
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${phaseInfo.badge}`}>
+                        {phaseInfo.label}
+                      </span>
+                    )}
+                    {selectedNode.obj.fields.knowledge_type && (
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${KNOWLEDGE_TYPE_COLORS[selectedNode.obj.fields.knowledge_type.key] ?? 'bg-muted text-muted-foreground'}`}>
+                        {selectedNode.obj.fields.knowledge_type.label}
+                      </span>
+                    )}
+                    {selectedNode.obj.fields.ai_support && (
+                      <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-indigo-100 text-indigo-700">
+                        AI-unterstützt
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Stats grid */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                    <div className="rounded-lg bg-card border p-3">
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Qualität</p>
+                      <p className="text-lg font-bold">
+                        {selectedNode.obj.fields.quality_score != null
+                          ? `★ ${selectedNode.obj.fields.quality_score}`
+                          : <span className="text-muted-foreground text-sm">—</span>}
+                      </p>
+                    </div>
+                    <div className="rounded-lg bg-card border p-3">
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Version</p>
+                      <p className="text-sm font-semibold truncate">
+                        {selectedNode.obj.fields.version ?? <span className="text-muted-foreground">—</span>}
+                      </p>
+                    </div>
+                    <div className="rounded-lg bg-card border p-3">
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Verbindungen</p>
+                      <p className="text-lg font-bold">{selectedNodeConnections.length}</p>
+                    </div>
+                    <div className="rounded-lg bg-card border p-3">
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Geändert</p>
+                      <p className="text-sm font-semibold truncate">
+                        {selectedNode.obj.fields.last_modified
+                          ? formatDate(selectedNode.obj.fields.last_modified)
+                          : <span className="text-muted-foreground">—</span>}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* AI Summary / Content */}
+                  {(selectedNode.obj.fields.ai_summary || selectedNode.obj.fields.content) && (
+                    <div className="rounded-lg bg-card border p-3 mb-4">
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1.5">
+                        {selectedNode.obj.fields.ai_summary ? 'KI-Zusammenfassung' : 'Inhalt'}
+                      </p>
+                      <p className="text-sm text-foreground leading-relaxed line-clamp-3">
+                        {selectedNode.obj.fields.ai_summary ?? selectedNode.obj.fields.content}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Connected nodes */}
+                  {selectedNodeConnections.length > 0 && (
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-2">
+                        Verbundene Wissensobjekte
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedNodeConnections.map(e => {
+                          const fromId = extractRecordId(e.fields.item_from);
+                          const toId = extractRecordId(e.fields.item_to);
+                          const otherId = fromId === selectedNodeId ? toId : fromId;
+                          const otherNode = otherId ? nodeData.find(n => n.objId === otherId) : null;
+                          const linkStyle = LINK_TYPE_STYLES[e.fields.link_type?.key ?? 'related'] ?? LINK_TYPE_STYLES.related;
+                          return (
+                            <button
+                              key={e.record_id}
+                              onClick={() => otherId && setSelectedNodeId(otherId)}
+                              className="flex items-center gap-1.5 text-xs bg-card border rounded-full px-2.5 py-1 hover:bg-accent transition-colors"
+                            >
+                              <span
+                                className="w-1.5 h-1.5 rounded-full shrink-0"
+                                style={{ backgroundColor: linkStyle.color }}
+                              />
+                              <span className="truncate max-w-[120px]">
+                                {otherNode?.obj.fields.title ?? '—'}
+                              </span>
+                              <span className="text-muted-foreground text-[10px] shrink-0">
+                                {e.fields.link_type?.label ?? 'Related'}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* ── Legende ── */}
+          <div className="border-t px-4 py-3 flex flex-wrap gap-x-5 gap-y-1.5 items-center bg-muted/5">
+            {activePhasesInMap.map(p => (
+              <div key={p.key} className="flex items-center gap-1.5">
+                <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: PHASE_NODE_COLORS[p.key] }} />
+                <span className="text-xs text-muted-foreground">{p.label} ({nodeData.filter(n => n.obj.fields.phase?.key === p.key).length})</span>
+              </div>
+            ))}
+            <span className="text-xs text-muted-foreground ml-auto">
+              {nodeData.length} Knoten · {edges.length} Verbindungen
+            </span>
           </div>
         </div>
       )}
