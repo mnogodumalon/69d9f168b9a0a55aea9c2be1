@@ -672,11 +672,14 @@ function KnowledgeMapVisualization({
                     <div className="flex items-center gap-2 min-w-0 flex-1">
                       <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: phaseColor }} />
                       <button
-                        className="font-bold text-base leading-snug truncate text-left hover:underline hover:text-primary transition-colors min-w-0"
+                        className="group flex items-center gap-1.5 min-w-0 text-left"
                         title="Details anzeigen"
                         onClick={() => { setDetailNode(selectedNode); setImageExpanded(false); }}
                       >
-                        {selectedNode.obj.fields.title ?? '—'}
+                        <span className="font-bold text-base leading-snug truncate text-primary underline underline-offset-2 decoration-primary/40 group-hover:decoration-primary transition-all min-w-0">
+                          {selectedNode.obj.fields.title ?? '—'}
+                        </span>
+                        <IconExternalLink size={13} className="shrink-0 text-primary/60 group-hover:text-primary transition-colors" />
                       </button>
                     </div>
                     <button
