@@ -330,6 +330,10 @@ export default function DashboardOverview() {
         kartenKnoten={kartenKnoten}
         objektVerlinkungen={objektVerlinkungen}
         wissensobjekteMap={wissensobjekteMap}
+        onEdit={(recordId) => {
+          const enriched = enrichedWissensobjekte.find(e => e.record_id === recordId);
+          if (enriched) { setEditRecord(enriched); setDialogOpen(true); }
+        }}
       />
 
       {/* Authors */}
@@ -398,11 +402,13 @@ function KnowledgeMapVisualization({
   kartenKnoten,
   objektVerlinkungen,
   wissensobjekteMap,
+  onEdit,
 }: {
   wissenslandkarten: Wissenslandkarten[];
   kartenKnoten: KartenKnoten[];
   objektVerlinkungen: ObjektVerlinkungen[];
   wissensobjekteMap: Map<string, Wissensobjekte>;
+  onEdit: (recordId: string) => void;
 }) {
   const [selectedMapId, setSelectedMapId] = useState<string>('');
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
@@ -953,6 +959,17 @@ function KnowledgeMapVisualization({
                     <p className="text-sm text-foreground leading-relaxed">{obj.fields.application_evidence}</p>
                   </div>
                 )}
+              </div>
+
+              {/* Footer */}
+              <div className="px-5 py-3 border-t bg-muted/20 flex justify-end">
+                <Button
+                  size="sm"
+                  onClick={() => { setDetailNode(null); onEdit(detailNode.objId); }}
+                >
+                  <IconPencil size={14} className="mr-1.5 shrink-0" />
+                  Bearbeiten
+                </Button>
               </div>
             </DialogContent>
           </Dialog>
