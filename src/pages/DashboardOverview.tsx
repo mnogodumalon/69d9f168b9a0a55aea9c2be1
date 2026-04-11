@@ -13,7 +13,7 @@ import { AI_PHOTO_SCAN } from '@/config/ai-features';
 import {
   IconAlertCircle, IconTool, IconRefresh, IconCheck, IconPlus, IconPencil, IconTrash,
   IconBulb, IconBook, IconShare, IconRocket, IconArchive, IconUsers, IconMap,
-  IconStar, IconTrendingUp, IconSearch
+  IconStar, IconTrendingUp, IconSearch, IconChevronRight
 } from '@tabler/icons-react';
 import { Input } from '@/components/ui/input';
 
@@ -106,6 +106,25 @@ export default function DashboardOverview() {
 
   return (
     <div className="space-y-6">
+      {/* Intent Workflows */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <a href="#/intents/wissensobjekt-kuratieren" className="bg-card border border-border border-l-4 border-l-primary rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow flex items-center gap-3 min-w-0 overflow-hidden">
+          <IconStar size={20} className="text-primary shrink-0" />
+          <div className="min-w-0 flex-1">
+            <div className="font-semibold text-sm truncate">Wissensobjekt kuratieren</div>
+            <div className="text-xs text-muted-foreground line-clamp-2">Objekt prüfen, Feedback geben, Verlinkungen erstellen und Phase weitersetzen</div>
+          </div>
+          <IconChevronRight size={16} className="text-muted-foreground shrink-0" />
+        </a>
+        <a href="#/intents/wissenslandkarte-befuellen" className="bg-card border border-border border-l-4 border-l-primary rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow flex items-center gap-3 min-w-0 overflow-hidden">
+          <IconMap size={20} className="text-primary shrink-0" />
+          <div className="min-w-0 flex-1">
+            <div className="font-semibold text-sm truncate">Wissenslandkarte befüllen</div>
+            <div className="text-xs text-muted-foreground line-clamp-2">Karte auswählen, Knoten hinzufügen und Verlinkungen zwischen Wissensobjekten definieren</div>
+          </div>
+          <IconChevronRight size={16} className="text-muted-foreground shrink-0" />
+        </a>
+      </div>
       {/* KPI Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard
