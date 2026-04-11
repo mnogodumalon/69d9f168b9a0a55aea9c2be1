@@ -18,7 +18,7 @@ import {
   IconChevronDown, IconChevronLeft, IconExternalLink, IconFile, IconPhoto, IconX
 } from '@tabler/icons-react';
 import { Input } from '@/components/ui/input';
-import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const APPGROUP_ID = '69d9f168b9a0a55aea9c2be1';
 const REPAIR_ENDPOINT = '/claude/build/repair';
@@ -406,6 +406,8 @@ function KnowledgeMapVisualization({
 }) {
   const [selectedMapId, setSelectedMapId] = useState<string>('');
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [detailNode, setDetailNode] = useState<{ kn: KartenKnoten; obj: Wissensobjekte; objId: string } | null>(null);
+  const [imageExpanded, setImageExpanded] = useState(false);
 
   const effectiveMapId = selectedMapId || wissenslandkarten[0]?.record_id || '';
   const selectedMap = wissenslandkarten.find(m => m.record_id === effectiveMapId);
@@ -663,120 +665,13 @@ function KnowledgeMapVisualization({
                   <div className="flex items-start justify-between gap-3 mb-3">
                     <div className="flex items-center gap-2 min-w-0 flex-1">
                       <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: phaseColor }} />
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <button
-                            className="font-bold text-base leading-snug truncate text-left hover:underline hover:text-primary transition-colors min-w-0"
-                            title="Details anzeigen"
-                          >
-                            {selectedNode.obj.fields.title ?? '—'}
-                          </button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-80 max-h-[70vh] overflow-y-auto p-0" align="start" sideOffset={8}>
-                          {/* Popover Header */}
-                          <div className="p-4 border-b" style={{ borderColor: phaseColor + '44', background: phaseColor + '11' }}>
-                            <div className="flex items-start gap-2 mb-2">
-                              <div className="w-2.5 h-2.5 rounded-full shrink-0 mt-1" style={{ backgroundColor: phaseColor }} />
-                              <p className="font-bold text-sm leading-snug flex-1">{selectedNode.obj.fields.title ?? '—'}</p>
-                            </div>
-                            <div className="flex flex-wrap gap-1">
-                              {phaseInfo && (
-                                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${phaseInfo.badge}`}>
-                                  {phaseInfo.label}
-                                </span>
-                              )}
-                              {selectedNode.obj.fields.knowledge_type && (
-                                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${KNOWLEDGE_TYPE_COLORS[selectedNode.obj.fields.knowledge_type.key] ?? 'bg-muted text-muted-foreground'}`}>
-                                  {selectedNode.obj.fields.knowledge_type.label}
-                                </span>
-                              )}
-                              {selectedNode.obj.fields.ai_support && (
-                                <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-indigo-100 text-indigo-700">
-                                  AI-unterstützt
-                                </span>
-                              )}
-                            </div>
-                          </div>
-
-                          <div className="p-4 space-y-3">
-                            {/* AI Summary / Content */}
-                            {(selectedNode.obj.fields.ai_summary || selectedNode.obj.fields.content) && (
-                              <div>
-                                <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">
-                                  {selectedNode.obj.fields.ai_summary ? 'KI-Zusammenfassung' : 'Inhalt'}
-                                </p>
-                                <p className="text-xs text-foreground leading-relaxed">
-                                  {selectedNode.obj.fields.ai_summary ?? selectedNode.obj.fields.content}
-                                </p>
-                              </div>
-                            )}
-
-                            {/* Attachment */}
-                            {selectedNode.obj.fields.attachment && (
-                              <div>
-                                <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1.5">
-                                  Anhang
-                                </p>
-                                {isImageUrl(selectedNode.obj.fields.attachment) ? (
-                                  <a
-                                    href={selectedNode.obj.fields.attachment}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="block rounded-lg overflow-hidden border hover:opacity-90 transition-opacity"
-                                    title="Bild in voller Größe öffnen"
-                                  >
-                                    <img
-                                      src={selectedNode.obj.fields.attachment}
-                                      alt={selectedNode.obj.fields.title ?? 'Anhang'}
-                                      className="w-full h-auto max-h-48 object-contain bg-muted/20"
-                                    />
-                                    <div className="flex items-center gap-1.5 px-2 py-1.5 bg-muted/30 text-[10px] text-muted-foreground">
-                                      <IconPhoto size={12} className="shrink-0" />
-                                      <span className="truncate flex-1">Bild öffnen</span>
-                                      <IconExternalLink size={11} className="shrink-0" />
-                                    </div>
-                                  </a>
-                                ) : (
-                                  <a
-                                    href={selectedNode.obj.fields.attachment}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex items-center gap-2 rounded-lg border p-2.5 hover:bg-accent transition-colors text-xs"
-                                  >
-                                    <IconFile size={16} className="shrink-0 text-muted-foreground" />
-                                    <span className="flex-1 min-w-0 truncate">
-                                      {selectedNode.obj.fields.attachment.split('/').pop() ?? 'Dokument öffnen'}
-                                    </span>
-                                    <IconExternalLink size={13} className="shrink-0 text-muted-foreground" />
-                                  </a>
-                                )}
-                              </div>
-                            )}
-
-                            {/* Meta */}
-                            <div className="grid grid-cols-2 gap-2 pt-1 border-t">
-                              {selectedNode.obj.fields.quality_score != null && (
-                                <div>
-                                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Qualität</p>
-                                  <p className="text-sm font-bold">★ {selectedNode.obj.fields.quality_score}</p>
-                                </div>
-                              )}
-                              {selectedNode.obj.fields.version && (
-                                <div>
-                                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Version</p>
-                                  <p className="text-sm font-semibold">{selectedNode.obj.fields.version}</p>
-                                </div>
-                              )}
-                              {selectedNode.obj.fields.last_modified && (
-                                <div className="col-span-2">
-                                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Geändert</p>
-                                  <p className="text-xs font-medium">{formatDate(selectedNode.obj.fields.last_modified)}</p>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </PopoverContent>
-                      </Popover>
+                      <button
+                        className="font-bold text-base leading-snug truncate text-left hover:underline hover:text-primary transition-colors min-w-0"
+                        title="Details anzeigen"
+                        onClick={() => { setDetailNode(selectedNode); setImageExpanded(false); }}
+                      >
+                        {selectedNode.obj.fields.title ?? '—'}
+                      </button>
                     </div>
                     <button
                       onClick={() => setSelectedNodeId(null)}
@@ -902,6 +797,167 @@ function KnowledgeMapVisualization({
           </div>
         </div>
       )}
+
+      {/* ── Detail-Dialog ── */}
+      {detailNode && (() => {
+        const obj = detailNode.obj;
+        const phaseInfo = PHASES.find(p => p.key === obj.fields.phase?.key);
+        const phaseColor = PHASE_NODE_COLORS[obj.fields.phase?.key ?? ''] ?? '#94a3b8';
+        const attachment = obj.fields.attachment;
+        return (
+          <Dialog open={!!detailNode} onOpenChange={(o) => { if (!o) { setDetailNode(null); setImageExpanded(false); } }}>
+            <DialogContent className="max-w-lg p-0 overflow-hidden gap-0">
+              {/* Header */}
+              <div className="px-5 py-4 border-b" style={{ borderColor: phaseColor + '44', background: phaseColor + '12' }}>
+                <DialogHeader>
+                  <div className="flex items-center gap-2 pr-6">
+                    <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: phaseColor }} />
+                    <DialogTitle className="text-base leading-snug">{obj.fields.title ?? '—'}</DialogTitle>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 mt-1">
+                    {phaseInfo && (
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${phaseInfo.badge}`}>
+                        {phaseInfo.label}
+                      </span>
+                    )}
+                    {obj.fields.knowledge_type && (
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${KNOWLEDGE_TYPE_COLORS[obj.fields.knowledge_type.key] ?? 'bg-muted text-muted-foreground'}`}>
+                        {obj.fields.knowledge_type.label}
+                      </span>
+                    )}
+                    {obj.fields.ai_support && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-indigo-100 text-indigo-700">
+                        AI-unterstützt
+                      </span>
+                    )}
+                  </div>
+                </DialogHeader>
+              </div>
+
+              {/* Body */}
+              <div className="px-5 py-4 space-y-4 max-h-[65vh] overflow-y-auto">
+
+                {/* Kennzahlen */}
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="rounded-lg bg-muted/40 p-2.5 text-center">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Qualität</p>
+                    <p className="font-bold text-sm">{obj.fields.quality_score != null ? `★ ${obj.fields.quality_score}` : '—'}</p>
+                  </div>
+                  <div className="rounded-lg bg-muted/40 p-2.5 text-center">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Version</p>
+                    <p className="font-bold text-sm truncate">{obj.fields.version ?? '—'}</p>
+                  </div>
+                  <div className="rounded-lg bg-muted/40 p-2.5 text-center">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Geändert</p>
+                    <p className="font-bold text-sm truncate">
+                      {obj.fields.last_modified ? formatDate(obj.fields.last_modified) : '—'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* KI-Zusammenfassung / Inhalt */}
+                {(obj.fields.ai_summary || obj.fields.content) && (
+                  <div>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1.5">
+                      {obj.fields.ai_summary ? 'KI-Zusammenfassung' : 'Inhalt'}
+                    </p>
+                    <p className="text-sm text-foreground leading-relaxed">
+                      {obj.fields.ai_summary ?? obj.fields.content}
+                    </p>
+                  </div>
+                )}
+
+                {/* Anhang */}
+                {attachment && (
+                  <div>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-2">
+                      Anhang
+                    </p>
+                    {isImageUrl(attachment) ? (
+                      <div className="rounded-xl overflow-hidden border">
+                        {imageExpanded ? (
+                          <div>
+                            <img
+                              src={attachment}
+                              alt={obj.fields.title ?? 'Anhang'}
+                              className="w-full h-auto max-h-96 object-contain bg-black/5"
+                            />
+                            <div className="flex items-center justify-between px-3 py-2 bg-muted/30 border-t">
+                              <button
+                                onClick={() => setImageExpanded(false)}
+                                className="text-[11px] text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                              >
+                                <IconPhoto size={12} className="shrink-0" />
+                                Verkleinern
+                              </button>
+                              <a
+                                href={attachment}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[11px] text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                              >
+                                <IconExternalLink size={12} className="shrink-0" />
+                                In neuem Tab öffnen
+                              </a>
+                            </div>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setImageExpanded(true)}
+                            className="w-full relative group"
+                            title="Bild anzeigen"
+                          >
+                            <img
+                              src={attachment}
+                              alt={obj.fields.title ?? 'Anhang'}
+                              className="w-full h-40 object-cover bg-muted/20"
+                            />
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <div className="bg-white/90 rounded-full p-2">
+                                <IconPhoto size={20} className="text-foreground" />
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1.5 px-3 py-2 bg-muted/30 text-[11px] text-muted-foreground">
+                              <IconPhoto size={12} className="shrink-0" />
+                              <span className="flex-1 text-left truncate">Bild anklicken zum Anzeigen</span>
+                            </div>
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <a
+                        href={attachment}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 rounded-xl border p-3 hover:bg-accent transition-colors"
+                      >
+                        <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                          <IconFile size={18} className="text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">
+                            {decodeURIComponent(attachment.split('/').pop() ?? 'Dokument')}
+                          </p>
+                          <p className="text-xs text-muted-foreground">Klicken zum Öffnen</p>
+                        </div>
+                        <IconExternalLink size={15} className="shrink-0 text-muted-foreground" />
+                      </a>
+                    )}
+                  </div>
+                )}
+
+                {/* Anwendungsbeweise */}
+                {obj.fields.application_evidence && (
+                  <div>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1.5">Anwendungsnachweise</p>
+                    <p className="text-sm text-foreground leading-relaxed">{obj.fields.application_evidence}</p>
+                  </div>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
+        );
+      })()}
     </div>
   );
 }
