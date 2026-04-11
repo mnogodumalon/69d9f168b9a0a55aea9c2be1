@@ -15,8 +15,15 @@ import {
   IconAlertCircle, IconTool, IconRefresh, IconCheck, IconPlus, IconPencil, IconTrash,
   IconBulb, IconBook, IconShare, IconRocket, IconArchive, IconUsers, IconMap,
   IconStar, IconTrendingUp, IconSearch, IconChevronRight, IconNetwork,
-  IconChevronDown, IconChevronLeft, IconExternalLink, IconFile, IconPhoto, IconX, IconArrowLeft
+  IconChevronDown, IconChevronLeft, IconExternalLink, IconFile, IconPhoto, IconX, IconArrowLeft,
+  IconCalendar,
 } from '@tabler/icons-react';
+import {
+  startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval,
+  format, isSameMonth, isToday, addMonths, subMonths, addWeeks, subWeeks,
+  addDays, subDays, addYears, subYears,
+} from 'date-fns';
+import { de } from 'date-fns/locale';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
@@ -338,6 +345,9 @@ export default function DashboardOverview() {
           if (enriched) { setEditRecord(enriched); setDialogOpen(true); }
         }}
       />
+
+      {/* Aktivitätskalender */}
+      <CalendarView items={enrichedWissensobjekte} />
 
       {/* Authors */}
       <div className="rounded-2xl border bg-card p-5 overflow-hidden">
@@ -1265,6 +1275,420 @@ function KnowledgeCard({
           <span className="ml-auto shrink-0">{formatDate(item.fields.last_modified)}</span>
         )}
       </div>
+    </div>
+  );
+}
+
+// ─── Aktivitätskalender ──────────────────────────────────────────────────────
+
+function CalendarView({ items }: { items: EnrichedWissensobjekte[] }) {
+  const today = new Date();
+  const [calView, setCalView] = useState<'year' | 'month' | 'week' | 'day'>('month');
+  const [currentDate, setCurrentDate] = useState(today);
+  const [selectedItem, setSelectedItem] = useState<EnrichedWissensobjekte | null>(null);
+  const [imageExpanded, setImageExpanded] = useState(false);
+
+  const itemsByDate = useMemo(() => {
+    const map = new Map<string, EnrichedWissensobjekte[]>();
+    for (const item of items) {
+      if (item.fields.last_modified) {
+        const key = item.fields.last_modified.slice(0, 10);
+        if (!map.has(key)) map.set(key, []);
+        map.get(key)!.push(item);
+      }
+    }
+    return map;
+  }, [items]);
+
+  const navigate = (dir: 1 | -1) => {
+    setCurrentDate(prev => {
+      if (calView === 'year') return dir === 1 ? addYears(prev, 1) : subYears(prev, 1);
+      if (calView === 'month') return dir === 1 ? addMonths(prev, 1) : subMonths(prev, 1);
+      if (calView === 'week') return dir === 1 ? addWeeks(prev, 1) : subWeeks(prev, 1);
+      return dir === 1 ? addDays(prev, 1) : subDays(prev, 1);
+    });
+  };
+
+  const headerLabel = useMemo(() => {
+    if (calView === 'year') return format(currentDate, 'yyyy');
+    if (calView === 'month') return format(currentDate, 'MMMM yyyy', { locale: de });
+    if (calView === 'week') {
+      const ws = startOfWeek(currentDate, { weekStartsOn: 1 });
+      const we = endOfWeek(currentDate, { weekStartsOn: 1 });
+      return `${format(ws, 'd. MMM', { locale: de })} – ${format(we, 'd. MMM yyyy', { locale: de })}`;
+    }
+    return format(currentDate, 'EEEE, d. MMMM yyyy', { locale: de });
+  }, [calView, currentDate]);
+
+  return (
+    <div className="rounded-2xl border bg-card overflow-hidden">
+      {/* Kalender-Header */}
+      <div className="flex items-center justify-between gap-3 px-5 py-4 border-b flex-wrap">
+        <div className="flex items-center gap-2">
+          <IconCalendar size={16} className="text-muted-foreground shrink-0" />
+          <h3 className="font-semibold text-sm">Aktivitätskalender</h3>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-1">
+            <button onClick={() => navigate(-1)} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
+              <IconChevronLeft size={16} className="shrink-0" />
+            </button>
+            <span className="text-sm font-medium min-w-[170px] text-center capitalize">{headerLabel}</span>
+            <button onClick={() => navigate(1)} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
+              <IconChevronRight size={16} className="shrink-0" />
+            </button>
+            <button
+              onClick={() => setCurrentDate(today)}
+              className="ml-1 text-xs px-2.5 py-1.5 rounded-lg border border-border hover:bg-muted transition-colors text-muted-foreground font-medium"
+            >
+              Heute
+            </button>
+          </div>
+          <div className="flex items-center bg-muted rounded-lg p-1">
+            {(['year', 'month', 'week', 'day'] as const).map(v => (
+              <button
+                key={v}
+                onClick={() => setCalView(v)}
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
+                  calView === v ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {v === 'year' ? 'Jahr' : v === 'month' ? 'Monat' : v === 'week' ? 'Woche' : 'Tag'}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Kalender-Inhalt */}
+      <div className="p-4">
+        {calView === 'month' && (
+          <CalMonthView currentDate={currentDate} itemsByDate={itemsByDate}
+            onSelect={setSelectedItem} onDayClick={d => { setCurrentDate(d); setCalView('day'); }} />
+        )}
+        {calView === 'week' && (
+          <CalWeekView currentDate={currentDate} itemsByDate={itemsByDate} onSelect={setSelectedItem} />
+        )}
+        {calView === 'day' && (
+          <CalDayView currentDate={currentDate} itemsByDate={itemsByDate} onSelect={setSelectedItem} />
+        )}
+        {calView === 'year' && (
+          <CalYearView currentDate={currentDate} itemsByDate={itemsByDate}
+            onMonthClick={d => { setCurrentDate(d); setCalView('month'); }} />
+        )}
+      </div>
+
+      {/* Detail-Dialog */}
+      {selectedItem && (() => {
+        const item = selectedItem;
+        const phaseInfo = PHASES.find(p => p.key === item.fields.phase?.key);
+        const phaseColor = PHASE_NODE_COLORS[item.fields.phase?.key ?? ''] ?? '#94a3b8';
+        const attachment = item.fields.attachment;
+        return (
+          <Dialog open onOpenChange={o => { if (!o) { setSelectedItem(null); setImageExpanded(false); } }}>
+            <DialogContent className="max-w-lg p-0 overflow-hidden gap-0">
+              <div className="px-5 py-4 border-b" style={{ borderColor: phaseColor + '44', background: phaseColor + '12' }}>
+                <DialogHeader>
+                  <div className="flex items-center gap-2 pr-6">
+                    <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: phaseColor }} />
+                    <DialogTitle className="text-base leading-snug">{item.fields.title ?? '—'}</DialogTitle>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 mt-1">
+                    {phaseInfo && (
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${phaseInfo.badge}`}>{phaseInfo.label}</span>
+                    )}
+                    {item.fields.knowledge_type && (
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${KNOWLEDGE_TYPE_COLORS[item.fields.knowledge_type.key] ?? 'bg-muted text-muted-foreground'}`}>
+                        {item.fields.knowledge_type.label}
+                      </span>
+                    )}
+                    {item.fields.ai_support && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-indigo-100 text-indigo-700">AI-unterstützt</span>
+                    )}
+                  </div>
+                </DialogHeader>
+              </div>
+              <div className="px-5 py-4 space-y-4 max-h-[60vh] overflow-y-auto">
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="rounded-lg bg-muted/40 p-2.5 text-center">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Qualität</p>
+                    <p className="font-bold text-sm">{item.fields.quality_score != null ? `★ ${item.fields.quality_score}` : '—'}</p>
+                  </div>
+                  <div className="rounded-lg bg-muted/40 p-2.5 text-center">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Version</p>
+                    <p className="font-bold text-sm truncate">{item.fields.version ?? '—'}</p>
+                  </div>
+                  <div className="rounded-lg bg-muted/40 p-2.5 text-center">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Geändert</p>
+                    <p className="font-bold text-sm">{item.fields.last_modified ? formatDate(item.fields.last_modified) : '—'}</p>
+                  </div>
+                </div>
+                {(item.fields.ai_summary || item.fields.content) && (
+                  <div>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1.5">
+                      {item.fields.ai_summary ? 'KI-Zusammenfassung' : 'Inhalt'}
+                    </p>
+                    <p className="text-sm text-foreground leading-relaxed">{item.fields.ai_summary ?? item.fields.content}</p>
+                  </div>
+                )}
+                {attachment && isImageUrl(attachment) && (
+                  <div>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-2">Anhang</p>
+                    <div className="rounded-xl overflow-hidden border">
+                      {imageExpanded ? (
+                        <div>
+                          <img src={attachment} alt={item.fields.title ?? 'Anhang'} className="w-full h-auto max-h-96 object-contain bg-black/5" />
+                          <button onClick={() => setImageExpanded(false)} className="w-full text-[11px] text-muted-foreground hover:text-foreground px-3 py-2 bg-muted/30 border-t flex items-center gap-1">
+                            <IconPhoto size={12} className="shrink-0" /> Verkleinern
+                          </button>
+                        </div>
+                      ) : (
+                        <button onClick={() => setImageExpanded(true)} className="w-full relative" title="Bild anzeigen">
+                          <img src={attachment} alt={item.fields.title ?? 'Anhang'} className="w-full h-36 object-cover bg-muted/20" />
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 hover:opacity-100 transition-opacity">
+                            <div className="bg-white/90 rounded-full p-2"><IconPhoto size={18} className="text-foreground" /></div>
+                          </div>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {item.fields.application_evidence && (
+                  <div>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1.5">Anwendungsnachweise</p>
+                    <p className="text-sm text-foreground leading-relaxed">{item.fields.application_evidence}</p>
+                  </div>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
+        );
+      })()}
+    </div>
+  );
+}
+
+function CalMonthView({ currentDate, itemsByDate, onSelect, onDayClick }: {
+  currentDate: Date;
+  itemsByDate: Map<string, EnrichedWissensobjekte[]>;
+  onSelect: (item: EnrichedWissensobjekte) => void;
+  onDayClick: (date: Date) => void;
+}) {
+  const start = startOfWeek(startOfMonth(currentDate), { weekStartsOn: 1 });
+  const end = endOfWeek(endOfMonth(currentDate), { weekStartsOn: 1 });
+  const days = eachDayOfInterval({ start, end });
+  const DAY_NAMES = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+  return (
+    <div>
+      <div className="grid grid-cols-7 mb-1">
+        {DAY_NAMES.map(d => (
+          <div key={d} className="text-center text-xs font-medium text-muted-foreground py-2">{d}</div>
+        ))}
+      </div>
+      <div className="grid grid-cols-7 gap-px bg-border rounded-xl overflow-hidden">
+        {days.map(day => {
+          const key = format(day, 'yyyy-MM-dd');
+          const dayItems = itemsByDate.get(key) ?? [];
+          const inMonth = isSameMonth(day, currentDate);
+          const todayDay = isToday(day);
+          return (
+            <div key={key} className={`bg-card min-h-[80px] p-1.5 flex flex-col gap-0.5 ${!inMonth ? 'opacity-40' : ''}`}>
+              <button
+                onClick={() => onDayClick(day)}
+                className={`self-start text-xs font-medium w-6 h-6 flex items-center justify-center rounded-full transition-colors ${
+                  todayDay ? 'bg-primary text-primary-foreground' : 'hover:bg-muted text-foreground'
+                }`}
+              >
+                {format(day, 'd')}
+              </button>
+              {dayItems.slice(0, 2).map(item => {
+                const phaseColor = PHASE_NODE_COLORS[item.fields.phase?.key ?? ''] ?? '#94a3b8';
+                return (
+                  <button
+                    key={item.record_id}
+                    onClick={() => onSelect(item)}
+                    className="flex items-center gap-1 w-full text-left rounded overflow-hidden hover:bg-muted/60 transition-colors px-1 py-0.5 min-w-0"
+                    title={item.fields.title ?? ''}
+                  >
+                    <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: phaseColor }} />
+                    <span className="text-[10px] text-foreground truncate leading-none">{item.fields.title ?? '—'}</span>
+                  </button>
+                );
+              })}
+              {dayItems.length > 2 && (
+                <span className="text-[9px] text-muted-foreground px-1">+{dayItems.length - 2}</span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function CalWeekView({ currentDate, itemsByDate, onSelect }: {
+  currentDate: Date;
+  itemsByDate: Map<string, EnrichedWissensobjekte[]>;
+  onSelect: (item: EnrichedWissensobjekte) => void;
+}) {
+  const wStart = startOfWeek(currentDate, { weekStartsOn: 1 });
+  const days = Array.from({ length: 7 }, (_, i) => addDays(wStart, i));
+  return (
+    <div className="grid grid-cols-7 gap-2">
+      {days.map(day => {
+        const key = format(day, 'yyyy-MM-dd');
+        const dayItems = itemsByDate.get(key) ?? [];
+        const todayDay = isToday(day);
+        return (
+          <div key={key} className="flex flex-col gap-1.5 min-w-0">
+            <div className={`text-center rounded-xl py-2 ${todayDay ? 'bg-primary text-primary-foreground' : 'bg-muted/50'}`}>
+              <div className="text-[10px] font-medium capitalize">{format(day, 'EEE', { locale: de })}</div>
+              <div className={`text-base font-bold leading-tight ${todayDay ? '' : 'text-foreground'}`}>{format(day, 'd')}</div>
+            </div>
+            <div className="flex flex-col gap-1">
+              {dayItems.map(item => {
+                const phaseColor = PHASE_NODE_COLORS[item.fields.phase?.key ?? ''] ?? '#94a3b8';
+                return (
+                  <button
+                    key={item.record_id}
+                    onClick={() => onSelect(item)}
+                    className="w-full text-left rounded-lg overflow-hidden border border-border hover:border-primary/40 hover:shadow-sm transition-all bg-card"
+                  >
+                    <div className="h-1 w-full" style={{ backgroundColor: phaseColor }} />
+                    <div className="p-1.5">
+                      <p className="text-[10px] font-medium text-foreground leading-tight truncate">{item.fields.title ?? '—'}</p>
+                      {item.fields.knowledge_type && (
+                        <p className="text-[9px] text-muted-foreground truncate">{item.fields.knowledge_type.label}</p>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+              {dayItems.length === 0 && (
+                <div className="h-12 rounded-lg border border-dashed border-border/40" />
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function CalDayView({ currentDate, itemsByDate, onSelect }: {
+  currentDate: Date;
+  itemsByDate: Map<string, EnrichedWissensobjekte[]>;
+  onSelect: (item: EnrichedWissensobjekte) => void;
+}) {
+  const key = format(currentDate, 'yyyy-MM-dd');
+  const dayItems = itemsByDate.get(key) ?? [];
+  if (dayItems.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
+        <IconCalendar size={40} className="text-muted-foreground" stroke={1.5} />
+        <div>
+          <p className="font-medium text-foreground">Keine Aktivität an diesem Tag</p>
+          <p className="text-sm text-muted-foreground mt-1">Wähle ein anderes Datum oder wechsle zur Monatsansicht.</p>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {dayItems.map(item => {
+        const phaseInfo = PHASES.find(p => p.key === item.fields.phase?.key);
+        const phaseColor = PHASE_NODE_COLORS[item.fields.phase?.key ?? ''] ?? '#94a3b8';
+        return (
+          <button
+            key={item.record_id}
+            onClick={() => onSelect(item)}
+            className="text-left rounded-2xl border border-border overflow-hidden hover:shadow-md transition-shadow bg-card"
+          >
+            <div className="h-1.5 w-full" style={{ backgroundColor: phaseColor }} />
+            <div className="p-4 space-y-2">
+              <p className="font-semibold text-foreground leading-snug">{item.fields.title ?? '—'}</p>
+              <div className="flex flex-wrap gap-1">
+                {phaseInfo && (
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${phaseInfo.badge}`}>{phaseInfo.label}</span>
+                )}
+                {item.fields.knowledge_type && (
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${KNOWLEDGE_TYPE_COLORS[item.fields.knowledge_type.key] ?? 'bg-muted text-muted-foreground'}`}>
+                    {item.fields.knowledge_type.label}
+                  </span>
+                )}
+              </div>
+              {(item.fields.ai_summary || item.fields.content) && (
+                <p className="text-xs text-muted-foreground line-clamp-2">{item.fields.ai_summary ?? item.fields.content}</p>
+              )}
+              {item.fields.quality_score != null && (
+                <p className="text-xs text-muted-foreground">★ {item.fields.quality_score}</p>
+              )}
+            </div>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function CalYearView({ currentDate, itemsByDate, onMonthClick }: {
+  currentDate: Date;
+  itemsByDate: Map<string, EnrichedWissensobjekte[]>;
+  onMonthClick: (date: Date) => void;
+}) {
+  const year = currentDate.getFullYear();
+  const months = Array.from({ length: 12 }, (_, i) => new Date(year, i, 1));
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+      {months.map(month => {
+        const mStart = startOfWeek(startOfMonth(month), { weekStartsOn: 1 });
+        const mEnd = endOfWeek(endOfMonth(month), { weekStartsOn: 1 });
+        const mDays = eachDayOfInterval({ start: mStart, end: mEnd });
+        const monthKey = format(month, 'yyyy-MM');
+        const monthCount = Array.from(itemsByDate.entries())
+          .filter(([k]) => k.startsWith(monthKey))
+          .reduce((s, [, v]) => s + v.length, 0);
+        return (
+          <button
+            key={monthKey}
+            onClick={() => onMonthClick(month)}
+            className="text-left rounded-xl border border-border p-3 hover:border-primary/40 hover:shadow-sm transition-all bg-card"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <p className="text-xs font-semibold text-foreground capitalize flex-1 truncate">
+                {format(month, 'MMMM', { locale: de })}
+              </p>
+              {monthCount > 0 && (
+                <span className="text-[10px] bg-primary/10 text-primary rounded-full px-1.5 py-0.5 font-medium shrink-0">{monthCount}</span>
+              )}
+            </div>
+            <div className="grid grid-cols-7 gap-px">
+              {['M','D','M','D','F','S','S'].map((d, i) => (
+                <div key={i} className="text-center text-[8px] text-muted-foreground/40 font-medium">{d}</div>
+              ))}
+              {mDays.map(day => {
+                const dayKey = format(day, 'yyyy-MM-dd');
+                const hasItems = itemsByDate.has(dayKey);
+                const inMonth = isSameMonth(day, month);
+                const todayDay = isToday(day);
+                return (
+                  <div
+                    key={dayKey}
+                    className={`text-center text-[8px] py-0.5 rounded-sm leading-none ${
+                      !inMonth ? 'text-muted-foreground/15' :
+                      todayDay ? 'bg-primary text-primary-foreground font-bold' :
+                      hasItems ? 'bg-primary/15 text-primary font-semibold' :
+                      'text-muted-foreground'
+                    }`}
+                  >
+                    {format(day, 'd')}
+                  </div>
+                );
+              })}
+            </div>
+          </button>
+        );
+      })}
     </div>
   );
 }
