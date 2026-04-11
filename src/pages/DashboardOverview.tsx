@@ -349,7 +349,7 @@ export default function DashboardOverview() {
           <p className="text-sm text-muted-foreground">Keine Benutzer</p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {benutzerrollen.slice(0, 6).map(user => {
+            {benutzerrollen.map(user => {
               const contributions = wissensobjekte.filter(w =>
                 extractRecordId(w.fields.author) === user.record_id
               ).length;
