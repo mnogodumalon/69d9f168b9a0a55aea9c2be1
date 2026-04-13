@@ -1,0 +1,20 @@
+- Benutzerrollen (benutzerrollen): firstname[string/text], lastname[string/text], email[string/email], phone[string/tel], role[lookup/select], department[string/text], active[bool]
+- Wissenslandkarten (wissenslandkarten): map_title[string/text], map_type[lookup/select], map_description[string/textarea], nodes_data[string/textarea], edges_data[string/textarea], layout_data[string/textarea], map_creator[applookup/select], map_created_at[date/datetimeminute]
+  → map_creator links to app_id 69d9f1389d64c3f691ecb8d3
+- Wissensobjekte (wissensobjekte): title[string/text], content[string/textarea], phase[lookup/select], knowledge_type[lookup/select], quality_score[number], ai_summary[string/textarea], tacit_extraction_log[string/textarea], version[string/text], author[applookup/select], curator[applookup/select], ai_support[bool], last_modified[date/datetimeminute], application_evidence[string/textarea], attachment[file]
+  → author links to app_id 69d9f1389d64c3f691ecb8d3
+  → curator links to app_id 69d9f1389d64c3f691ecb8d3
+- Objekt-Feedback-Zuordnung (objekt_feedback_zuordnung): if_knowledge_item[applookup/select], if_feedback_version[applookup/select], if_giver_role[lookup/select]
+  → if_knowledge_item links to app_id 69d9f13e60220ce3295e28ad
+  → if_feedback_version links to app_id 69d9f1405df3db2093b4586f
+- Feedback und Versionen (feedback_und_versionen): related_item[applookup/select], version_number[string/text], change_type[lookup/select], feedback_text[string/textarea], rating[number], timestamp[date/datetimeminute], responsible_person[applookup/select]
+  → related_item links to app_id 69d9f13e60220ce3295e28ad
+  → responsible_person links to app_id 69d9f1389d64c3f691ecb8d3
+- Karten-Knoten (karten_knoten): mn_map[applookup/select], mn_item[applookup/select], pos_x[number], pos_y[number], node_layout_data[string/text], node_label[string/text], mn_added_at[date/datetimeminute], mn_added_by[applookup/select]
+  → mn_map links to app_id 69d9f13f1ee82a740e80b81e
+  → mn_item links to app_id 69d9f13e60220ce3295e28ad
+  → mn_added_by links to app_id 69d9f1389d64c3f691ecb8d3
+- Objekt-Verlinkungen (objekt_verlinkungen): item_from[applookup/select], item_to[applookup/select], link_type[lookup/select], link_strength[number], il_created_at[date/datetimeminute], il_created_by[applookup/select], link_justification[string/textarea]
+  → item_from links to app_id 69d9f13e60220ce3295e28ad
+  → item_to links to app_id 69d9f13e60220ce3295e28ad
+  → il_created_by links to app_id 69d9f1389d64c3f691ecb8d3
