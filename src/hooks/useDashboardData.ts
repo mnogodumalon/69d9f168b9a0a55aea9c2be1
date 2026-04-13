@@ -1,37 +1,37 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import type { Benutzerrollen, Wissenslandkarten, Wissensobjekte, ObjektFeedbackZuordnung, FeedbackUndVersionen, KartenKnoten, ObjektVerlinkungen } from '@/types/app';
+import type { KartenKnoten, Wissensobjekte, FeedbackUndVersionen, Wissenslandkarten, Benutzerrollen, ObjektVerlinkungen, ObjektFeedbackZuordnung } from '@/types/app';
 import { LivingAppsService } from '@/services/livingAppsService';
 
 export function useDashboardData() {
-  const [benutzerrollen, setBenutzerrollen] = useState<Benutzerrollen[]>([]);
-  const [wissenslandkarten, setWissenslandkarten] = useState<Wissenslandkarten[]>([]);
-  const [wissensobjekte, setWissensobjekte] = useState<Wissensobjekte[]>([]);
-  const [objektFeedbackZuordnung, setObjektFeedbackZuordnung] = useState<ObjektFeedbackZuordnung[]>([]);
-  const [feedbackUndVersionen, setFeedbackUndVersionen] = useState<FeedbackUndVersionen[]>([]);
   const [kartenKnoten, setKartenKnoten] = useState<KartenKnoten[]>([]);
+  const [wissensobjekte, setWissensobjekte] = useState<Wissensobjekte[]>([]);
+  const [feedbackUndVersionen, setFeedbackUndVersionen] = useState<FeedbackUndVersionen[]>([]);
+  const [wissenslandkarten, setWissenslandkarten] = useState<Wissenslandkarten[]>([]);
+  const [benutzerrollen, setBenutzerrollen] = useState<Benutzerrollen[]>([]);
   const [objektVerlinkungen, setObjektVerlinkungen] = useState<ObjektVerlinkungen[]>([]);
+  const [objektFeedbackZuordnung, setObjektFeedbackZuordnung] = useState<ObjektFeedbackZuordnung[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   const fetchAll = useCallback(async () => {
     setError(null);
     try {
-      const [benutzerrollenData, wissenslandkartenData, wissensobjekteData, objektFeedbackZuordnungData, feedbackUndVersionenData, kartenKnotenData, objektVerlinkungenData] = await Promise.all([
-        LivingAppsService.getBenutzerrollen(),
-        LivingAppsService.getWissenslandkarten(),
-        LivingAppsService.getWissensobjekte(),
-        LivingAppsService.getObjektFeedbackZuordnung(),
-        LivingAppsService.getFeedbackUndVersionen(),
+      const [kartenKnotenData, wissensobjekteData, feedbackUndVersionenData, wissenslandkartenData, benutzerrollenData, objektVerlinkungenData, objektFeedbackZuordnungData] = await Promise.all([
         LivingAppsService.getKartenKnoten(),
+        LivingAppsService.getWissensobjekte(),
+        LivingAppsService.getFeedbackUndVersionen(),
+        LivingAppsService.getWissenslandkarten(),
+        LivingAppsService.getBenutzerrollen(),
         LivingAppsService.getObjektVerlinkungen(),
+        LivingAppsService.getObjektFeedbackZuordnung(),
       ]);
-      setBenutzerrollen(benutzerrollenData);
-      setWissenslandkarten(wissenslandkartenData);
-      setWissensobjekte(wissensobjekteData);
-      setObjektFeedbackZuordnung(objektFeedbackZuordnungData);
-      setFeedbackUndVersionen(feedbackUndVersionenData);
       setKartenKnoten(kartenKnotenData);
+      setWissensobjekte(wissensobjekteData);
+      setFeedbackUndVersionen(feedbackUndVersionenData);
+      setWissenslandkarten(wissenslandkartenData);
+      setBenutzerrollen(benutzerrollenData);
       setObjektVerlinkungen(objektVerlinkungenData);
+      setObjektFeedbackZuordnung(objektFeedbackZuordnungData);
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Fehler beim Laden der Daten'));
     } finally {
@@ -45,22 +45,22 @@ export function useDashboardData() {
   useEffect(() => {
     async function silentRefresh() {
       try {
-        const [benutzerrollenData, wissenslandkartenData, wissensobjekteData, objektFeedbackZuordnungData, feedbackUndVersionenData, kartenKnotenData, objektVerlinkungenData] = await Promise.all([
-          LivingAppsService.getBenutzerrollen(),
-          LivingAppsService.getWissenslandkarten(),
-          LivingAppsService.getWissensobjekte(),
-          LivingAppsService.getObjektFeedbackZuordnung(),
-          LivingAppsService.getFeedbackUndVersionen(),
+        const [kartenKnotenData, wissensobjekteData, feedbackUndVersionenData, wissenslandkartenData, benutzerrollenData, objektVerlinkungenData, objektFeedbackZuordnungData] = await Promise.all([
           LivingAppsService.getKartenKnoten(),
+          LivingAppsService.getWissensobjekte(),
+          LivingAppsService.getFeedbackUndVersionen(),
+          LivingAppsService.getWissenslandkarten(),
+          LivingAppsService.getBenutzerrollen(),
           LivingAppsService.getObjektVerlinkungen(),
+          LivingAppsService.getObjektFeedbackZuordnung(),
         ]);
-        setBenutzerrollen(benutzerrollenData);
-        setWissenslandkarten(wissenslandkartenData);
-        setWissensobjekte(wissensobjekteData);
-        setObjektFeedbackZuordnung(objektFeedbackZuordnungData);
-        setFeedbackUndVersionen(feedbackUndVersionenData);
         setKartenKnoten(kartenKnotenData);
+        setWissensobjekte(wissensobjekteData);
+        setFeedbackUndVersionen(feedbackUndVersionenData);
+        setWissenslandkarten(wissenslandkartenData);
+        setBenutzerrollen(benutzerrollenData);
         setObjektVerlinkungen(objektVerlinkungenData);
+        setObjektFeedbackZuordnung(objektFeedbackZuordnungData);
       } catch {
         // silently ignore — stale data is better than no data
       }
@@ -69,18 +69,6 @@ export function useDashboardData() {
     window.addEventListener('dashboard-refresh', handleRefresh);
     return () => window.removeEventListener('dashboard-refresh', handleRefresh);
   }, []);
-
-  const benutzerrollenMap = useMemo(() => {
-    const m = new Map<string, Benutzerrollen>();
-    benutzerrollen.forEach(r => m.set(r.record_id, r));
-    return m;
-  }, [benutzerrollen]);
-
-  const wissenslandkartenMap = useMemo(() => {
-    const m = new Map<string, Wissenslandkarten>();
-    wissenslandkarten.forEach(r => m.set(r.record_id, r));
-    return m;
-  }, [wissenslandkarten]);
 
   const wissensobjekteMap = useMemo(() => {
     const m = new Map<string, Wissensobjekte>();
@@ -94,5 +82,17 @@ export function useDashboardData() {
     return m;
   }, [feedbackUndVersionen]);
 
-  return { benutzerrollen, setBenutzerrollen, wissenslandkarten, setWissenslandkarten, wissensobjekte, setWissensobjekte, objektFeedbackZuordnung, setObjektFeedbackZuordnung, feedbackUndVersionen, setFeedbackUndVersionen, kartenKnoten, setKartenKnoten, objektVerlinkungen, setObjektVerlinkungen, loading, error, fetchAll, benutzerrollenMap, wissenslandkartenMap, wissensobjekteMap, feedbackUndVersionenMap };
+  const wissenslandkartenMap = useMemo(() => {
+    const m = new Map<string, Wissenslandkarten>();
+    wissenslandkarten.forEach(r => m.set(r.record_id, r));
+    return m;
+  }, [wissenslandkarten]);
+
+  const benutzerrollenMap = useMemo(() => {
+    const m = new Map<string, Benutzerrollen>();
+    benutzerrollen.forEach(r => m.set(r.record_id, r));
+    return m;
+  }, [benutzerrollen]);
+
+  return { kartenKnoten, setKartenKnoten, wissensobjekte, setWissensobjekte, feedbackUndVersionen, setFeedbackUndVersionen, wissenslandkarten, setWissenslandkarten, benutzerrollen, setBenutzerrollen, objektVerlinkungen, setObjektVerlinkungen, objektFeedbackZuordnung, setObjektFeedbackZuordnung, loading, error, fetchAll, wissensobjekteMap, feedbackUndVersionenMap, wissenslandkartenMap, benutzerrollenMap };
 }

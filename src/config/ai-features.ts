@@ -5,13 +5,13 @@
  */
 
 export const AI_PHOTO_SCAN: Record<string, boolean> = {
-  Benutzerrollen: true,
-  Wissenslandkarten: true,
-  Wissensobjekte: true,
-  ObjektFeedbackZuordnung: true,
-  FeedbackUndVersionen: true,
   KartenKnoten: true,
+  Wissensobjekte: true,
+  FeedbackUndVersionen: true,
+  Wissenslandkarten: true,
+  Benutzerrollen: true,
   ObjektVerlinkungen: true,
+  ObjektFeedbackZuordnung: true,
 };
 
 /**
@@ -20,11 +20,11 @@ export const AI_PHOTO_SCAN: Record<string, boolean> = {
  * and to auto-populate geo fields.
  */
 export const AI_PHOTO_LOCATION: Record<string, boolean> = {
-  Benutzerrollen: true,
-  Wissenslandkarten: true,
-  Wissensobjekte: true,
-  ObjektFeedbackZuordnung: true,
-  FeedbackUndVersionen: true,
   KartenKnoten: true,
+  Wissensobjekte: true,
+  FeedbackUndVersionen: true,
+  Wissenslandkarten: true,
+  Benutzerrollen: true,
   ObjektVerlinkungen: true,
+  ObjektFeedbackZuordnung: true,
 };

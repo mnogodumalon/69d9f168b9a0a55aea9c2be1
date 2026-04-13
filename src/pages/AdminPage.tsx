@@ -1,21 +1,21 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useDashboardData } from '@/hooks/useDashboardData';
-import type { Benutzerrollen, Wissenslandkarten, Wissensobjekte, ObjektFeedbackZuordnung, FeedbackUndVersionen, KartenKnoten, ObjektVerlinkungen } from '@/types/app';
+import type { KartenKnoten, Wissensobjekte, FeedbackUndVersionen, Wissenslandkarten, Benutzerrollen, ObjektVerlinkungen, ObjektFeedbackZuordnung } from '@/types/app';
 import { LivingAppsService, extractRecordId, cleanFieldsForApi } from '@/services/livingAppsService';
-import { BenutzerrollenDialog } from '@/components/dialogs/BenutzerrollenDialog';
-import { BenutzerrollenViewDialog } from '@/components/dialogs/BenutzerrollenViewDialog';
-import { WissenslandkartenDialog } from '@/components/dialogs/WissenslandkartenDialog';
-import { WissenslandkartenViewDialog } from '@/components/dialogs/WissenslandkartenViewDialog';
-import { WissensobjekteDialog } from '@/components/dialogs/WissensobjekteDialog';
-import { WissensobjekteViewDialog } from '@/components/dialogs/WissensobjekteViewDialog';
-import { ObjektFeedbackZuordnungDialog } from '@/components/dialogs/ObjektFeedbackZuordnungDialog';
-import { ObjektFeedbackZuordnungViewDialog } from '@/components/dialogs/ObjektFeedbackZuordnungViewDialog';
-import { FeedbackUndVersionenDialog } from '@/components/dialogs/FeedbackUndVersionenDialog';
-import { FeedbackUndVersionenViewDialog } from '@/components/dialogs/FeedbackUndVersionenViewDialog';
 import { KartenKnotenDialog } from '@/components/dialogs/KartenKnotenDialog';
 import { KartenKnotenViewDialog } from '@/components/dialogs/KartenKnotenViewDialog';
+import { WissensobjekteDialog } from '@/components/dialogs/WissensobjekteDialog';
+import { WissensobjekteViewDialog } from '@/components/dialogs/WissensobjekteViewDialog';
+import { FeedbackUndVersionenDialog } from '@/components/dialogs/FeedbackUndVersionenDialog';
+import { FeedbackUndVersionenViewDialog } from '@/components/dialogs/FeedbackUndVersionenViewDialog';
+import { WissenslandkartenDialog } from '@/components/dialogs/WissenslandkartenDialog';
+import { WissenslandkartenViewDialog } from '@/components/dialogs/WissenslandkartenViewDialog';
+import { BenutzerrollenDialog } from '@/components/dialogs/BenutzerrollenDialog';
+import { BenutzerrollenViewDialog } from '@/components/dialogs/BenutzerrollenViewDialog';
 import { ObjektVerlinkungenDialog } from '@/components/dialogs/ObjektVerlinkungenDialog';
 import { ObjektVerlinkungenViewDialog } from '@/components/dialogs/ObjektVerlinkungenViewDialog';
+import { ObjektFeedbackZuordnungDialog } from '@/components/dialogs/ObjektFeedbackZuordnungDialog';
+import { ObjektFeedbackZuordnungViewDialog } from '@/components/dialogs/ObjektFeedbackZuordnungViewDialog';
 import { BulkEditDialog } from '@/components/dialogs/BulkEditDialog';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { PageShell } from '@/components/PageShell';
@@ -42,24 +42,15 @@ function fmtDate(d?: string) {
 }
 
 // Field metadata per entity for bulk edit and column filters
-const BENUTZERROLLEN_FIELDS = [
-  { key: 'firstname', label: 'Vorname', type: 'string/text' },
-  { key: 'lastname', label: 'Nachname', type: 'string/text' },
-  { key: 'email', label: 'E-Mail-Adresse', type: 'string/email' },
-  { key: 'phone', label: 'Telefonnummer', type: 'string/tel' },
-  { key: 'role', label: 'Rolle', type: 'lookup/select', options: [{ key: 'contributor', label: 'Contributor' }, { key: 'facilitator', label: 'Facilitator' }, { key: 'curator', label: 'Curator' }, { key: 'ai_support', label: 'AI-Support' }, { key: 'admin', label: 'Admin' }, { key: 'viewer', label: 'Viewer' }] },
-  { key: 'department', label: 'Abteilung / Organisationseinheit', type: 'string/text' },
-  { key: 'active', label: 'Aktiv', type: 'bool' },
-];
-const WISSENSLANDKARTEN_FIELDS = [
-  { key: 'map_title', label: 'Titel der Wissenslandkarte', type: 'string/text' },
-  { key: 'map_type', label: 'Typ der Landkarte', type: 'lookup/select', options: [{ key: 'prozesslandkarte', label: 'Prozesslandkarte' }, { key: 'themen_cluster', label: 'Themen-Cluster' }, { key: 'wissensgraph', label: 'Wissensgraph' }, { key: 'mindmap', label: 'Mindmap' }] },
-  { key: 'map_description', label: 'Beschreibung', type: 'string/textarea' },
-  { key: 'nodes_data', label: 'Nodes-Daten', type: 'string/textarea' },
-  { key: 'edges_data', label: 'Edges-Daten', type: 'string/textarea' },
-  { key: 'layout_data', label: 'Layout-Daten', type: 'string/textarea' },
-  { key: 'map_creator', label: 'Erstellt von', type: 'applookup/select', targetEntity: 'benutzerrollen', targetAppId: 'BENUTZERROLLEN', displayField: 'firstname' },
-  { key: 'map_created_at', label: 'Erstellungsdatum', type: 'date/datetimeminute' },
+const KARTENKNOTEN_FIELDS = [
+  { key: 'mn_map', label: 'Wissenslandkarte', type: 'applookup/select', targetEntity: 'wissenslandkarten', targetAppId: 'WISSENSLANDKARTEN', displayField: 'map_title' },
+  { key: 'mn_item', label: 'Wissensobjekt (Node)', type: 'applookup/select', targetEntity: 'wissensobjekte', targetAppId: 'WISSENSOBJEKTE', displayField: 'title' },
+  { key: 'pos_x', label: 'Position X (Koordinate)', type: 'number' },
+  { key: 'pos_y', label: 'Position Y (Koordinate)', type: 'number' },
+  { key: 'node_layout_data', label: 'Layout-Daten des Knotens', type: 'string/text' },
+  { key: 'node_label', label: 'Angezeigter Label auf der Karte (optional)', type: 'string/text' },
+  { key: 'mn_added_at', label: 'Zeitpunkt der Hinzufügung', type: 'date/datetimeminute' },
+  { key: 'mn_added_by', label: 'Hinzugefügt von', type: 'applookup/select', targetEntity: 'benutzerrollen', targetAppId: 'BENUTZERROLLEN', displayField: 'firstname' },
 ];
 const WISSENSOBJEKTE_FIELDS = [
   { key: 'title', label: 'Titel', type: 'string/text' },
@@ -77,11 +68,6 @@ const WISSENSOBJEKTE_FIELDS = [
   { key: 'application_evidence', label: 'Anwendungsnachweise', type: 'string/textarea' },
   { key: 'attachment', label: 'Anhang / Dokument', type: 'file' },
 ];
-const OBJEKTFEEDBACKZUORDNUNG_FIELDS = [
-  { key: 'if_knowledge_item', label: 'Wissensobjekt', type: 'applookup/select', targetEntity: 'wissensobjekte', targetAppId: 'WISSENSOBJEKTE', displayField: 'title' },
-  { key: 'if_feedback_version', label: 'Feedback / Version', type: 'applookup/select', targetEntity: 'feedback_und_versionen', targetAppId: 'FEEDBACK_UND_VERSIONEN', displayField: 'version_number' },
-  { key: 'if_giver_role', label: 'Rolle des Feedback-Gebers im Kontext dieses Objekts', type: 'lookup/select', options: [{ key: 'contributor', label: 'Contributor' }, { key: 'facilitator', label: 'Facilitator' }, { key: 'curator', label: 'Curator' }, { key: 'ai_support', label: 'AI-Support' }, { key: 'admin', label: 'Admin' }, { key: 'viewer', label: 'Viewer' }] },
-];
 const FEEDBACKUNDVERSIONEN_FIELDS = [
   { key: 'related_item', label: 'Bezug zu Wissensobjekt', type: 'applookup/select', targetEntity: 'wissensobjekte', targetAppId: 'WISSENSOBJEKTE', displayField: 'title' },
   { key: 'version_number', label: 'Version des Wissensobjekts', type: 'string/text' },
@@ -91,15 +77,24 @@ const FEEDBACKUNDVERSIONEN_FIELDS = [
   { key: 'timestamp', label: 'Zeitstempel', type: 'date/datetimeminute' },
   { key: 'responsible_person', label: 'Verantwortliche Person', type: 'applookup/select', targetEntity: 'benutzerrollen', targetAppId: 'BENUTZERROLLEN', displayField: 'firstname' },
 ];
-const KARTENKNOTEN_FIELDS = [
-  { key: 'mn_map', label: 'Wissenslandkarte', type: 'applookup/select', targetEntity: 'wissenslandkarten', targetAppId: 'WISSENSLANDKARTEN', displayField: 'map_title' },
-  { key: 'mn_item', label: 'Wissensobjekt (Node)', type: 'applookup/select', targetEntity: 'wissensobjekte', targetAppId: 'WISSENSOBJEKTE', displayField: 'title' },
-  { key: 'pos_x', label: 'Position X (Koordinate)', type: 'number' },
-  { key: 'pos_y', label: 'Position Y (Koordinate)', type: 'number' },
-  { key: 'node_layout_data', label: 'Layout-Daten des Knotens', type: 'string/text' },
-  { key: 'node_label', label: 'Angezeigter Label auf der Karte (optional)', type: 'string/text' },
-  { key: 'mn_added_at', label: 'Zeitpunkt der Hinzufügung', type: 'date/datetimeminute' },
-  { key: 'mn_added_by', label: 'Hinzugefügt von', type: 'applookup/select', targetEntity: 'benutzerrollen', targetAppId: 'BENUTZERROLLEN', displayField: 'firstname' },
+const WISSENSLANDKARTEN_FIELDS = [
+  { key: 'map_title', label: 'Titel der Wissenslandkarte', type: 'string/text' },
+  { key: 'map_type', label: 'Typ der Landkarte', type: 'lookup/select', options: [{ key: 'prozesslandkarte', label: 'Prozesslandkarte' }, { key: 'themen_cluster', label: 'Themen-Cluster' }, { key: 'wissensgraph', label: 'Wissensgraph' }, { key: 'mindmap', label: 'Mindmap' }] },
+  { key: 'map_description', label: 'Beschreibung', type: 'string/textarea' },
+  { key: 'nodes_data', label: 'Nodes-Daten', type: 'string/textarea' },
+  { key: 'edges_data', label: 'Edges-Daten', type: 'string/textarea' },
+  { key: 'layout_data', label: 'Layout-Daten', type: 'string/textarea' },
+  { key: 'map_creator', label: 'Erstellt von', type: 'applookup/select', targetEntity: 'benutzerrollen', targetAppId: 'BENUTZERROLLEN', displayField: 'firstname' },
+  { key: 'map_created_at', label: 'Erstellungsdatum', type: 'date/datetimeminute' },
+];
+const BENUTZERROLLEN_FIELDS = [
+  { key: 'firstname', label: 'Vorname', type: 'string/text' },
+  { key: 'lastname', label: 'Nachname', type: 'string/text' },
+  { key: 'email', label: 'E-Mail-Adresse', type: 'string/email' },
+  { key: 'phone', label: 'Telefonnummer', type: 'string/tel' },
+  { key: 'role', label: 'Rolle', type: 'lookup/select', options: [{ key: 'contributor', label: 'Contributor' }, { key: 'facilitator', label: 'Facilitator' }, { key: 'curator', label: 'Curator' }, { key: 'ai_support', label: 'AI-Support' }, { key: 'admin', label: 'Admin' }, { key: 'viewer', label: 'Viewer' }] },
+  { key: 'department', label: 'Abteilung / Organisationseinheit', type: 'string/text' },
+  { key: 'active', label: 'Aktiv', type: 'bool' },
 ];
 const OBJEKTVERLINKUNGEN_FIELDS = [
   { key: 'item_from', label: 'Ausgangs-Wissensobjekt', type: 'applookup/select', targetEntity: 'wissensobjekte', targetAppId: 'WISSENSOBJEKTE', displayField: 'title' },
@@ -110,15 +105,20 @@ const OBJEKTVERLINKUNGEN_FIELDS = [
   { key: 'il_created_by', label: 'Erstellt von', type: 'applookup/select', targetEntity: 'benutzerrollen', targetAppId: 'BENUTZERROLLEN', displayField: 'firstname' },
   { key: 'link_justification', label: 'Begründung der Verlinkung (optional)', type: 'string/textarea' },
 ];
+const OBJEKTFEEDBACKZUORDNUNG_FIELDS = [
+  { key: 'if_knowledge_item', label: 'Wissensobjekt', type: 'applookup/select', targetEntity: 'wissensobjekte', targetAppId: 'WISSENSOBJEKTE', displayField: 'title' },
+  { key: 'if_feedback_version', label: 'Feedback / Version', type: 'applookup/select', targetEntity: 'feedback_und_versionen', targetAppId: 'FEEDBACK_UND_VERSIONEN', displayField: 'version_number' },
+  { key: 'if_giver_role', label: 'Rolle des Feedback-Gebers im Kontext dieses Objekts', type: 'lookup/select', options: [{ key: 'contributor', label: 'Contributor' }, { key: 'facilitator', label: 'Facilitator' }, { key: 'curator', label: 'Curator' }, { key: 'ai_support', label: 'AI-Support' }, { key: 'admin', label: 'Admin' }, { key: 'viewer', label: 'Viewer' }] },
+];
 
 const ENTITY_TABS = [
-  { key: 'benutzerrollen', label: 'Benutzerrollen', pascal: 'Benutzerrollen' },
-  { key: 'wissenslandkarten', label: 'Wissenslandkarten', pascal: 'Wissenslandkarten' },
-  { key: 'wissensobjekte', label: 'Wissensobjekte', pascal: 'Wissensobjekte' },
-  { key: 'objekt_feedback_zuordnung', label: 'Objekt-Feedback-Zuordnung', pascal: 'ObjektFeedbackZuordnung' },
-  { key: 'feedback_und_versionen', label: 'Feedback und Versionen', pascal: 'FeedbackUndVersionen' },
   { key: 'karten_knoten', label: 'Karten-Knoten', pascal: 'KartenKnoten' },
+  { key: 'wissensobjekte', label: 'Wissensobjekte', pascal: 'Wissensobjekte' },
+  { key: 'feedback_und_versionen', label: 'Feedback und Versionen', pascal: 'FeedbackUndVersionen' },
+  { key: 'wissenslandkarten', label: 'Wissenslandkarten', pascal: 'Wissenslandkarten' },
+  { key: 'benutzerrollen', label: 'Benutzerrollen', pascal: 'Benutzerrollen' },
   { key: 'objekt_verlinkungen', label: 'Objekt-Verlinkungen', pascal: 'ObjektVerlinkungen' },
+  { key: 'objekt_feedback_zuordnung', label: 'Objekt-Feedback-Zuordnung', pascal: 'ObjektFeedbackZuordnung' },
 ] as const;
 
 type EntityKey = typeof ENTITY_TABS[number]['key'];
@@ -127,24 +127,24 @@ export default function AdminPage() {
   const data = useDashboardData();
   const { loading, error, fetchAll } = data;
 
-  const [activeTab, setActiveTab] = useState<EntityKey>('benutzerrollen');
+  const [activeTab, setActiveTab] = useState<EntityKey>('karten_knoten');
   const [selectedIds, setSelectedIds] = useState<Record<EntityKey, Set<string>>>(() => ({
-    'benutzerrollen': new Set(),
-    'wissenslandkarten': new Set(),
-    'wissensobjekte': new Set(),
-    'objekt_feedback_zuordnung': new Set(),
-    'feedback_und_versionen': new Set(),
     'karten_knoten': new Set(),
+    'wissensobjekte': new Set(),
+    'feedback_und_versionen': new Set(),
+    'wissenslandkarten': new Set(),
+    'benutzerrollen': new Set(),
     'objekt_verlinkungen': new Set(),
+    'objekt_feedback_zuordnung': new Set(),
   }));
   const [filters, setFilters] = useState<Record<EntityKey, Record<string, string>>>(() => ({
-    'benutzerrollen': {},
-    'wissenslandkarten': {},
-    'wissensobjekte': {},
-    'objekt_feedback_zuordnung': {},
-    'feedback_und_versionen': {},
     'karten_knoten': {},
+    'wissensobjekte': {},
+    'feedback_und_versionen': {},
+    'wissenslandkarten': {},
+    'benutzerrollen': {},
     'objekt_verlinkungen': {},
+    'objekt_feedback_zuordnung': {},
   }));
   const [showFilters, setShowFilters] = useState(false);
   const [dialogState, setDialogState] = useState<{ entity: EntityKey; record: any } | null>(null);
@@ -159,13 +159,13 @@ export default function AdminPage() {
 
   const getRecords = useCallback((entity: EntityKey) => {
     switch (entity) {
-      case 'benutzerrollen': return (data as any).benutzerrollen as Benutzerrollen[] ?? [];
-      case 'wissenslandkarten': return (data as any).wissenslandkarten as Wissenslandkarten[] ?? [];
-      case 'wissensobjekte': return (data as any).wissensobjekte as Wissensobjekte[] ?? [];
-      case 'objekt_feedback_zuordnung': return (data as any).objektFeedbackZuordnung as ObjektFeedbackZuordnung[] ?? [];
-      case 'feedback_und_versionen': return (data as any).feedbackUndVersionen as FeedbackUndVersionen[] ?? [];
       case 'karten_knoten': return (data as any).kartenKnoten as KartenKnoten[] ?? [];
+      case 'wissensobjekte': return (data as any).wissensobjekte as Wissensobjekte[] ?? [];
+      case 'feedback_und_versionen': return (data as any).feedbackUndVersionen as FeedbackUndVersionen[] ?? [];
+      case 'wissenslandkarten': return (data as any).wissenslandkarten as Wissenslandkarten[] ?? [];
+      case 'benutzerrollen': return (data as any).benutzerrollen as Benutzerrollen[] ?? [];
       case 'objekt_verlinkungen': return (data as any).objektVerlinkungen as ObjektVerlinkungen[] ?? [];
+      case 'objekt_feedback_zuordnung': return (data as any).objektFeedbackZuordnung as ObjektFeedbackZuordnung[] ?? [];
       default: return [];
     }
   }, [data]);
@@ -173,28 +173,28 @@ export default function AdminPage() {
   const getLookupLists = useCallback((entity: EntityKey) => {
     const lists: Record<string, any[]> = {};
     switch (entity) {
-      case 'wissenslandkarten':
-        lists.benutzerrollenList = (data as any).benutzerrollen ?? [];
-        break;
-      case 'wissensobjekte':
-        lists.benutzerrollenList = (data as any).benutzerrollen ?? [];
-        break;
-      case 'objekt_feedback_zuordnung':
-        lists.wissensobjekteList = (data as any).wissensobjekte ?? [];
-        lists.feedback_und_versionenList = (data as any).feedbackUndVersionen ?? [];
-        break;
-      case 'feedback_und_versionen':
-        lists.wissensobjekteList = (data as any).wissensobjekte ?? [];
-        lists.benutzerrollenList = (data as any).benutzerrollen ?? [];
-        break;
       case 'karten_knoten':
         lists.wissenslandkartenList = (data as any).wissenslandkarten ?? [];
         lists.wissensobjekteList = (data as any).wissensobjekte ?? [];
         lists.benutzerrollenList = (data as any).benutzerrollen ?? [];
         break;
+      case 'wissensobjekte':
+        lists.benutzerrollenList = (data as any).benutzerrollen ?? [];
+        break;
+      case 'feedback_und_versionen':
+        lists.wissensobjekteList = (data as any).wissensobjekte ?? [];
+        lists.benutzerrollenList = (data as any).benutzerrollen ?? [];
+        break;
+      case 'wissenslandkarten':
+        lists.benutzerrollenList = (data as any).benutzerrollen ?? [];
+        break;
       case 'objekt_verlinkungen':
         lists.wissensobjekteList = (data as any).wissensobjekte ?? [];
         lists.benutzerrollenList = (data as any).benutzerrollen ?? [];
+        break;
+      case 'objekt_feedback_zuordnung':
+        lists.wissensobjekteList = (data as any).wissensobjekte ?? [];
+        lists.feedback_und_versionenList = (data as any).feedbackUndVersionen ?? [];
         break;
     }
     return lists;
@@ -206,7 +206,15 @@ export default function AdminPage() {
     if (!id) return '—';
     const lists = getLookupLists(entity);
     void fieldKey; // ensure used for noUnusedParameters
-    if (entity === 'wissenslandkarten' && fieldKey === 'map_creator') {
+    if (entity === 'karten_knoten' && fieldKey === 'mn_map') {
+      const match = (lists.wissenslandkartenList ?? []).find((r: any) => r.record_id === id);
+      return match?.fields.map_title ?? '—';
+    }
+    if (entity === 'karten_knoten' && fieldKey === 'mn_item') {
+      const match = (lists.wissensobjekteList ?? []).find((r: any) => r.record_id === id);
+      return match?.fields.title ?? '—';
+    }
+    if (entity === 'karten_knoten' && fieldKey === 'mn_added_by') {
       const match = (lists.benutzerrollenList ?? []).find((r: any) => r.record_id === id);
       return match?.fields.firstname ?? '—';
     }
@@ -218,14 +226,6 @@ export default function AdminPage() {
       const match = (lists.benutzerrollenList ?? []).find((r: any) => r.record_id === id);
       return match?.fields.firstname ?? '—';
     }
-    if (entity === 'objekt_feedback_zuordnung' && fieldKey === 'if_knowledge_item') {
-      const match = (lists.wissensobjekteList ?? []).find((r: any) => r.record_id === id);
-      return match?.fields.title ?? '—';
-    }
-    if (entity === 'objekt_feedback_zuordnung' && fieldKey === 'if_feedback_version') {
-      const match = (lists.feedback_und_versionenList ?? []).find((r: any) => r.record_id === id);
-      return match?.fields.version_number ?? '—';
-    }
     if (entity === 'feedback_und_versionen' && fieldKey === 'related_item') {
       const match = (lists.wissensobjekteList ?? []).find((r: any) => r.record_id === id);
       return match?.fields.title ?? '—';
@@ -234,15 +234,7 @@ export default function AdminPage() {
       const match = (lists.benutzerrollenList ?? []).find((r: any) => r.record_id === id);
       return match?.fields.firstname ?? '—';
     }
-    if (entity === 'karten_knoten' && fieldKey === 'mn_map') {
-      const match = (lists.wissenslandkartenList ?? []).find((r: any) => r.record_id === id);
-      return match?.fields.map_title ?? '—';
-    }
-    if (entity === 'karten_knoten' && fieldKey === 'mn_item') {
-      const match = (lists.wissensobjekteList ?? []).find((r: any) => r.record_id === id);
-      return match?.fields.title ?? '—';
-    }
-    if (entity === 'karten_knoten' && fieldKey === 'mn_added_by') {
+    if (entity === 'wissenslandkarten' && fieldKey === 'map_creator') {
       const match = (lists.benutzerrollenList ?? []).find((r: any) => r.record_id === id);
       return match?.fields.firstname ?? '—';
     }
@@ -258,18 +250,26 @@ export default function AdminPage() {
       const match = (lists.benutzerrollenList ?? []).find((r: any) => r.record_id === id);
       return match?.fields.firstname ?? '—';
     }
+    if (entity === 'objekt_feedback_zuordnung' && fieldKey === 'if_knowledge_item') {
+      const match = (lists.wissensobjekteList ?? []).find((r: any) => r.record_id === id);
+      return match?.fields.title ?? '—';
+    }
+    if (entity === 'objekt_feedback_zuordnung' && fieldKey === 'if_feedback_version') {
+      const match = (lists.feedback_und_versionenList ?? []).find((r: any) => r.record_id === id);
+      return match?.fields.version_number ?? '—';
+    }
     return String(url);
   }, [getLookupLists]);
 
   const getFieldMeta = useCallback((entity: EntityKey) => {
     switch (entity) {
-      case 'benutzerrollen': return BENUTZERROLLEN_FIELDS;
-      case 'wissenslandkarten': return WISSENSLANDKARTEN_FIELDS;
-      case 'wissensobjekte': return WISSENSOBJEKTE_FIELDS;
-      case 'objekt_feedback_zuordnung': return OBJEKTFEEDBACKZUORDNUNG_FIELDS;
-      case 'feedback_und_versionen': return FEEDBACKUNDVERSIONEN_FIELDS;
       case 'karten_knoten': return KARTENKNOTEN_FIELDS;
+      case 'wissensobjekte': return WISSENSOBJEKTE_FIELDS;
+      case 'feedback_und_versionen': return FEEDBACKUNDVERSIONEN_FIELDS;
+      case 'wissenslandkarten': return WISSENSLANDKARTEN_FIELDS;
+      case 'benutzerrollen': return BENUTZERROLLEN_FIELDS;
       case 'objekt_verlinkungen': return OBJEKTVERLINKUNGEN_FIELDS;
+      case 'objekt_feedback_zuordnung': return OBJEKTFEEDBACKZUORDNUNG_FIELDS;
       default: return [];
     }
   }, []);
@@ -364,40 +364,40 @@ export default function AdminPage() {
 
   const getServiceMethods = useCallback((entity: EntityKey) => {
     switch (entity) {
-      case 'benutzerrollen': return {
-        create: (fields: any) => LivingAppsService.createBenutzerrollenEntry(fields),
-        update: (id: string, fields: any) => LivingAppsService.updateBenutzerrollenEntry(id, fields),
-        remove: (id: string) => LivingAppsService.deleteBenutzerrollenEntry(id),
-      };
-      case 'wissenslandkarten': return {
-        create: (fields: any) => LivingAppsService.createWissenslandkartenEntry(fields),
-        update: (id: string, fields: any) => LivingAppsService.updateWissenslandkartenEntry(id, fields),
-        remove: (id: string) => LivingAppsService.deleteWissenslandkartenEntry(id),
+      case 'karten_knoten': return {
+        create: (fields: any) => LivingAppsService.createKartenKnotenEntry(fields),
+        update: (id: string, fields: any) => LivingAppsService.updateKartenKnotenEntry(id, fields),
+        remove: (id: string) => LivingAppsService.deleteKartenKnotenEntry(id),
       };
       case 'wissensobjekte': return {
         create: (fields: any) => LivingAppsService.createWissensobjekteEntry(fields),
         update: (id: string, fields: any) => LivingAppsService.updateWissensobjekteEntry(id, fields),
         remove: (id: string) => LivingAppsService.deleteWissensobjekteEntry(id),
       };
-      case 'objekt_feedback_zuordnung': return {
-        create: (fields: any) => LivingAppsService.createObjektFeedbackZuordnungEntry(fields),
-        update: (id: string, fields: any) => LivingAppsService.updateObjektFeedbackZuordnungEntry(id, fields),
-        remove: (id: string) => LivingAppsService.deleteObjektFeedbackZuordnungEntry(id),
-      };
       case 'feedback_und_versionen': return {
         create: (fields: any) => LivingAppsService.createFeedbackUndVersionenEntry(fields),
         update: (id: string, fields: any) => LivingAppsService.updateFeedbackUndVersionenEntry(id, fields),
         remove: (id: string) => LivingAppsService.deleteFeedbackUndVersionenEntry(id),
       };
-      case 'karten_knoten': return {
-        create: (fields: any) => LivingAppsService.createKartenKnotenEntry(fields),
-        update: (id: string, fields: any) => LivingAppsService.updateKartenKnotenEntry(id, fields),
-        remove: (id: string) => LivingAppsService.deleteKartenKnotenEntry(id),
+      case 'wissenslandkarten': return {
+        create: (fields: any) => LivingAppsService.createWissenslandkartenEntry(fields),
+        update: (id: string, fields: any) => LivingAppsService.updateWissenslandkartenEntry(id, fields),
+        remove: (id: string) => LivingAppsService.deleteWissenslandkartenEntry(id),
+      };
+      case 'benutzerrollen': return {
+        create: (fields: any) => LivingAppsService.createBenutzerrollenEntry(fields),
+        update: (id: string, fields: any) => LivingAppsService.updateBenutzerrollenEntry(id, fields),
+        remove: (id: string) => LivingAppsService.deleteBenutzerrollenEntry(id),
       };
       case 'objekt_verlinkungen': return {
         create: (fields: any) => LivingAppsService.createObjektVerlinkungenEntry(fields),
         update: (id: string, fields: any) => LivingAppsService.updateObjektVerlinkungenEntry(id, fields),
         remove: (id: string) => LivingAppsService.deleteObjektVerlinkungenEntry(id),
+      };
+      case 'objekt_feedback_zuordnung': return {
+        create: (fields: any) => LivingAppsService.createObjektFeedbackZuordnungEntry(fields),
+        update: (id: string, fields: any) => LivingAppsService.updateObjektFeedbackZuordnungEntry(id, fields),
+        remove: (id: string) => LivingAppsService.deleteObjektFeedbackZuordnungEntry(id),
       };
       default: return null;
     }
@@ -726,25 +726,17 @@ export default function AdminPage() {
         </Table>
       </div>
 
-      {(createEntity === 'benutzerrollen' || dialogState?.entity === 'benutzerrollen') && (
-        <BenutzerrollenDialog
-          open={createEntity === 'benutzerrollen' || dialogState?.entity === 'benutzerrollen'}
+      {(createEntity === 'karten_knoten' || dialogState?.entity === 'karten_knoten') && (
+        <KartenKnotenDialog
+          open={createEntity === 'karten_knoten' || dialogState?.entity === 'karten_knoten'}
           onClose={() => { setCreateEntity(null); setDialogState(null); }}
-          onSubmit={dialogState?.entity === 'benutzerrollen' ? handleUpdate : (fields: any) => handleCreate('benutzerrollen', fields)}
-          defaultValues={dialogState?.entity === 'benutzerrollen' ? dialogState.record?.fields : undefined}
-          enablePhotoScan={AI_PHOTO_SCAN['Benutzerrollen']}
-          enablePhotoLocation={AI_PHOTO_LOCATION['Benutzerrollen']}
-        />
-      )}
-      {(createEntity === 'wissenslandkarten' || dialogState?.entity === 'wissenslandkarten') && (
-        <WissenslandkartenDialog
-          open={createEntity === 'wissenslandkarten' || dialogState?.entity === 'wissenslandkarten'}
-          onClose={() => { setCreateEntity(null); setDialogState(null); }}
-          onSubmit={dialogState?.entity === 'wissenslandkarten' ? handleUpdate : (fields: any) => handleCreate('wissenslandkarten', fields)}
-          defaultValues={dialogState?.entity === 'wissenslandkarten' ? dialogState.record?.fields : undefined}
+          onSubmit={dialogState?.entity === 'karten_knoten' ? handleUpdate : (fields: any) => handleCreate('karten_knoten', fields)}
+          defaultValues={dialogState?.entity === 'karten_knoten' ? dialogState.record?.fields : undefined}
+          wissenslandkartenList={(data as any).wissenslandkarten ?? []}
+          wissensobjekteList={(data as any).wissensobjekte ?? []}
           benutzerrollenList={(data as any).benutzerrollen ?? []}
-          enablePhotoScan={AI_PHOTO_SCAN['Wissenslandkarten']}
-          enablePhotoLocation={AI_PHOTO_LOCATION['Wissenslandkarten']}
+          enablePhotoScan={AI_PHOTO_SCAN['KartenKnoten']}
+          enablePhotoLocation={AI_PHOTO_LOCATION['KartenKnoten']}
         />
       )}
       {(createEntity === 'wissensobjekte' || dialogState?.entity === 'wissensobjekte') && (
@@ -756,18 +748,6 @@ export default function AdminPage() {
           benutzerrollenList={(data as any).benutzerrollen ?? []}
           enablePhotoScan={AI_PHOTO_SCAN['Wissensobjekte']}
           enablePhotoLocation={AI_PHOTO_LOCATION['Wissensobjekte']}
-        />
-      )}
-      {(createEntity === 'objekt_feedback_zuordnung' || dialogState?.entity === 'objekt_feedback_zuordnung') && (
-        <ObjektFeedbackZuordnungDialog
-          open={createEntity === 'objekt_feedback_zuordnung' || dialogState?.entity === 'objekt_feedback_zuordnung'}
-          onClose={() => { setCreateEntity(null); setDialogState(null); }}
-          onSubmit={dialogState?.entity === 'objekt_feedback_zuordnung' ? handleUpdate : (fields: any) => handleCreate('objekt_feedback_zuordnung', fields)}
-          defaultValues={dialogState?.entity === 'objekt_feedback_zuordnung' ? dialogState.record?.fields : undefined}
-          wissensobjekteList={(data as any).wissensobjekte ?? []}
-          feedback_und_versionenList={(data as any).feedbackUndVersionen ?? []}
-          enablePhotoScan={AI_PHOTO_SCAN['ObjektFeedbackZuordnung']}
-          enablePhotoLocation={AI_PHOTO_LOCATION['ObjektFeedbackZuordnung']}
         />
       )}
       {(createEntity === 'feedback_und_versionen' || dialogState?.entity === 'feedback_und_versionen') && (
@@ -782,17 +762,25 @@ export default function AdminPage() {
           enablePhotoLocation={AI_PHOTO_LOCATION['FeedbackUndVersionen']}
         />
       )}
-      {(createEntity === 'karten_knoten' || dialogState?.entity === 'karten_knoten') && (
-        <KartenKnotenDialog
-          open={createEntity === 'karten_knoten' || dialogState?.entity === 'karten_knoten'}
+      {(createEntity === 'wissenslandkarten' || dialogState?.entity === 'wissenslandkarten') && (
+        <WissenslandkartenDialog
+          open={createEntity === 'wissenslandkarten' || dialogState?.entity === 'wissenslandkarten'}
           onClose={() => { setCreateEntity(null); setDialogState(null); }}
-          onSubmit={dialogState?.entity === 'karten_knoten' ? handleUpdate : (fields: any) => handleCreate('karten_knoten', fields)}
-          defaultValues={dialogState?.entity === 'karten_knoten' ? dialogState.record?.fields : undefined}
-          wissenslandkartenList={(data as any).wissenslandkarten ?? []}
-          wissensobjekteList={(data as any).wissensobjekte ?? []}
+          onSubmit={dialogState?.entity === 'wissenslandkarten' ? handleUpdate : (fields: any) => handleCreate('wissenslandkarten', fields)}
+          defaultValues={dialogState?.entity === 'wissenslandkarten' ? dialogState.record?.fields : undefined}
           benutzerrollenList={(data as any).benutzerrollen ?? []}
-          enablePhotoScan={AI_PHOTO_SCAN['KartenKnoten']}
-          enablePhotoLocation={AI_PHOTO_LOCATION['KartenKnoten']}
+          enablePhotoScan={AI_PHOTO_SCAN['Wissenslandkarten']}
+          enablePhotoLocation={AI_PHOTO_LOCATION['Wissenslandkarten']}
+        />
+      )}
+      {(createEntity === 'benutzerrollen' || dialogState?.entity === 'benutzerrollen') && (
+        <BenutzerrollenDialog
+          open={createEntity === 'benutzerrollen' || dialogState?.entity === 'benutzerrollen'}
+          onClose={() => { setCreateEntity(null); setDialogState(null); }}
+          onSubmit={dialogState?.entity === 'benutzerrollen' ? handleUpdate : (fields: any) => handleCreate('benutzerrollen', fields)}
+          defaultValues={dialogState?.entity === 'benutzerrollen' ? dialogState.record?.fields : undefined}
+          enablePhotoScan={AI_PHOTO_SCAN['Benutzerrollen']}
+          enablePhotoLocation={AI_PHOTO_LOCATION['Benutzerrollen']}
         />
       )}
       {(createEntity === 'objekt_verlinkungen' || dialogState?.entity === 'objekt_verlinkungen') && (
@@ -807,50 +795,16 @@ export default function AdminPage() {
           enablePhotoLocation={AI_PHOTO_LOCATION['ObjektVerlinkungen']}
         />
       )}
-      {viewState?.entity === 'benutzerrollen' && (
-        <BenutzerrollenViewDialog
-          open={viewState?.entity === 'benutzerrollen'}
-          onClose={() => setViewState(null)}
-          record={viewState?.record}
-          onEdit={(r: any) => { setViewState(null); setDialogState({ entity: 'benutzerrollen', record: r }); }}
-        />
-      )}
-      {viewState?.entity === 'wissenslandkarten' && (
-        <WissenslandkartenViewDialog
-          open={viewState?.entity === 'wissenslandkarten'}
-          onClose={() => setViewState(null)}
-          record={viewState?.record}
-          onEdit={(r: any) => { setViewState(null); setDialogState({ entity: 'wissenslandkarten', record: r }); }}
-          benutzerrollenList={(data as any).benutzerrollen ?? []}
-        />
-      )}
-      {viewState?.entity === 'wissensobjekte' && (
-        <WissensobjekteViewDialog
-          open={viewState?.entity === 'wissensobjekte'}
-          onClose={() => setViewState(null)}
-          record={viewState?.record}
-          onEdit={(r: any) => { setViewState(null); setDialogState({ entity: 'wissensobjekte', record: r }); }}
-          benutzerrollenList={(data as any).benutzerrollen ?? []}
-        />
-      )}
-      {viewState?.entity === 'objekt_feedback_zuordnung' && (
-        <ObjektFeedbackZuordnungViewDialog
-          open={viewState?.entity === 'objekt_feedback_zuordnung'}
-          onClose={() => setViewState(null)}
-          record={viewState?.record}
-          onEdit={(r: any) => { setViewState(null); setDialogState({ entity: 'objekt_feedback_zuordnung', record: r }); }}
+      {(createEntity === 'objekt_feedback_zuordnung' || dialogState?.entity === 'objekt_feedback_zuordnung') && (
+        <ObjektFeedbackZuordnungDialog
+          open={createEntity === 'objekt_feedback_zuordnung' || dialogState?.entity === 'objekt_feedback_zuordnung'}
+          onClose={() => { setCreateEntity(null); setDialogState(null); }}
+          onSubmit={dialogState?.entity === 'objekt_feedback_zuordnung' ? handleUpdate : (fields: any) => handleCreate('objekt_feedback_zuordnung', fields)}
+          defaultValues={dialogState?.entity === 'objekt_feedback_zuordnung' ? dialogState.record?.fields : undefined}
           wissensobjekteList={(data as any).wissensobjekte ?? []}
           feedback_und_versionenList={(data as any).feedbackUndVersionen ?? []}
-        />
-      )}
-      {viewState?.entity === 'feedback_und_versionen' && (
-        <FeedbackUndVersionenViewDialog
-          open={viewState?.entity === 'feedback_und_versionen'}
-          onClose={() => setViewState(null)}
-          record={viewState?.record}
-          onEdit={(r: any) => { setViewState(null); setDialogState({ entity: 'feedback_und_versionen', record: r }); }}
-          wissensobjekteList={(data as any).wissensobjekte ?? []}
-          benutzerrollenList={(data as any).benutzerrollen ?? []}
+          enablePhotoScan={AI_PHOTO_SCAN['ObjektFeedbackZuordnung']}
+          enablePhotoLocation={AI_PHOTO_LOCATION['ObjektFeedbackZuordnung']}
         />
       )}
       {viewState?.entity === 'karten_knoten' && (
@@ -864,6 +818,42 @@ export default function AdminPage() {
           benutzerrollenList={(data as any).benutzerrollen ?? []}
         />
       )}
+      {viewState?.entity === 'wissensobjekte' && (
+        <WissensobjekteViewDialog
+          open={viewState?.entity === 'wissensobjekte'}
+          onClose={() => setViewState(null)}
+          record={viewState?.record}
+          onEdit={(r: any) => { setViewState(null); setDialogState({ entity: 'wissensobjekte', record: r }); }}
+          benutzerrollenList={(data as any).benutzerrollen ?? []}
+        />
+      )}
+      {viewState?.entity === 'feedback_und_versionen' && (
+        <FeedbackUndVersionenViewDialog
+          open={viewState?.entity === 'feedback_und_versionen'}
+          onClose={() => setViewState(null)}
+          record={viewState?.record}
+          onEdit={(r: any) => { setViewState(null); setDialogState({ entity: 'feedback_und_versionen', record: r }); }}
+          wissensobjekteList={(data as any).wissensobjekte ?? []}
+          benutzerrollenList={(data as any).benutzerrollen ?? []}
+        />
+      )}
+      {viewState?.entity === 'wissenslandkarten' && (
+        <WissenslandkartenViewDialog
+          open={viewState?.entity === 'wissenslandkarten'}
+          onClose={() => setViewState(null)}
+          record={viewState?.record}
+          onEdit={(r: any) => { setViewState(null); setDialogState({ entity: 'wissenslandkarten', record: r }); }}
+          benutzerrollenList={(data as any).benutzerrollen ?? []}
+        />
+      )}
+      {viewState?.entity === 'benutzerrollen' && (
+        <BenutzerrollenViewDialog
+          open={viewState?.entity === 'benutzerrollen'}
+          onClose={() => setViewState(null)}
+          record={viewState?.record}
+          onEdit={(r: any) => { setViewState(null); setDialogState({ entity: 'benutzerrollen', record: r }); }}
+        />
+      )}
       {viewState?.entity === 'objekt_verlinkungen' && (
         <ObjektVerlinkungenViewDialog
           open={viewState?.entity === 'objekt_verlinkungen'}
@@ -872,6 +862,16 @@ export default function AdminPage() {
           onEdit={(r: any) => { setViewState(null); setDialogState({ entity: 'objekt_verlinkungen', record: r }); }}
           wissensobjekteList={(data as any).wissensobjekte ?? []}
           benutzerrollenList={(data as any).benutzerrollen ?? []}
+        />
+      )}
+      {viewState?.entity === 'objekt_feedback_zuordnung' && (
+        <ObjektFeedbackZuordnungViewDialog
+          open={viewState?.entity === 'objekt_feedback_zuordnung'}
+          onClose={() => setViewState(null)}
+          record={viewState?.record}
+          onEdit={(r: any) => { setViewState(null); setDialogState({ entity: 'objekt_feedback_zuordnung', record: r }); }}
+          wissensobjekteList={(data as any).wissensobjekte ?? []}
+          feedback_und_versionenList={(data as any).feedbackUndVersionen ?? []}
         />
       )}
 

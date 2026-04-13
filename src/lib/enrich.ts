@@ -12,17 +12,21 @@ function resolveDisplay(url: unknown, map: Map<string, any>, ...fields: string[]
   return fields.map(f => String(r.fields[f] ?? '')).join(' ').trim();
 }
 
-interface WissenslandkartenMaps {
+interface KartenKnotenMaps {
+  wissenslandkartenMap: Map<string, Wissenslandkarten>;
+  wissensobjekteMap: Map<string, Wissensobjekte>;
   benutzerrollenMap: Map<string, Benutzerrollen>;
 }
 
-export function enrichWissenslandkarten(
-  wissenslandkarten: Wissenslandkarten[],
-  maps: WissenslandkartenMaps
-): EnrichedWissenslandkarten[] {
-  return wissenslandkarten.map(r => ({
+export function enrichKartenKnoten(
+  kartenKnoten: KartenKnoten[],
+  maps: KartenKnotenMaps
+): EnrichedKartenKnoten[] {
+  return kartenKnoten.map(r => ({
     ...r,
-    map_creatorName: resolveDisplay(r.fields.map_creator, maps.benutzerrollenMap, 'firstname'),
+    mn_mapName: resolveDisplay(r.fields.mn_map, maps.wissenslandkartenMap, 'map_title'),
+    mn_itemName: resolveDisplay(r.fields.mn_item, maps.wissensobjekteMap, 'title'),
+    mn_added_byName: resolveDisplay(r.fields.mn_added_by, maps.benutzerrollenMap, 'firstname'),
   }));
 }
 
@@ -38,22 +42,6 @@ export function enrichWissensobjekte(
     ...r,
     authorName: resolveDisplay(r.fields.author, maps.benutzerrollenMap, 'firstname'),
     curatorName: resolveDisplay(r.fields.curator, maps.benutzerrollenMap, 'firstname'),
-  }));
-}
-
-interface ObjektFeedbackZuordnungMaps {
-  wissensobjekteMap: Map<string, Wissensobjekte>;
-  feedbackUndVersionenMap: Map<string, FeedbackUndVersionen>;
-}
-
-export function enrichObjektFeedbackZuordnung(
-  objektFeedbackZuordnung: ObjektFeedbackZuordnung[],
-  maps: ObjektFeedbackZuordnungMaps
-): EnrichedObjektFeedbackZuordnung[] {
-  return objektFeedbackZuordnung.map(r => ({
-    ...r,
-    if_knowledge_itemName: resolveDisplay(r.fields.if_knowledge_item, maps.wissensobjekteMap, 'title'),
-    if_feedback_versionName: resolveDisplay(r.fields.if_feedback_version, maps.feedbackUndVersionenMap, 'version_number'),
   }));
 }
 
@@ -73,21 +61,17 @@ export function enrichFeedbackUndVersionen(
   }));
 }
 
-interface KartenKnotenMaps {
-  wissenslandkartenMap: Map<string, Wissenslandkarten>;
-  wissensobjekteMap: Map<string, Wissensobjekte>;
+interface WissenslandkartenMaps {
   benutzerrollenMap: Map<string, Benutzerrollen>;
 }
 
-export function enrichKartenKnoten(
-  kartenKnoten: KartenKnoten[],
-  maps: KartenKnotenMaps
-): EnrichedKartenKnoten[] {
-  return kartenKnoten.map(r => ({
+export function enrichWissenslandkarten(
+  wissenslandkarten: Wissenslandkarten[],
+  maps: WissenslandkartenMaps
+): EnrichedWissenslandkarten[] {
+  return wissenslandkarten.map(r => ({
     ...r,
-    mn_mapName: resolveDisplay(r.fields.mn_map, maps.wissenslandkartenMap, 'map_title'),
-    mn_itemName: resolveDisplay(r.fields.mn_item, maps.wissensobjekteMap, 'title'),
-    mn_added_byName: resolveDisplay(r.fields.mn_added_by, maps.benutzerrollenMap, 'firstname'),
+    map_creatorName: resolveDisplay(r.fields.map_creator, maps.benutzerrollenMap, 'firstname'),
   }));
 }
 
@@ -105,5 +89,21 @@ export function enrichObjektVerlinkungen(
     item_fromName: resolveDisplay(r.fields.item_from, maps.wissensobjekteMap, 'title'),
     item_toName: resolveDisplay(r.fields.item_to, maps.wissensobjekteMap, 'title'),
     il_created_byName: resolveDisplay(r.fields.il_created_by, maps.benutzerrollenMap, 'firstname'),
+  }));
+}
+
+interface ObjektFeedbackZuordnungMaps {
+  wissensobjekteMap: Map<string, Wissensobjekte>;
+  feedbackUndVersionenMap: Map<string, FeedbackUndVersionen>;
+}
+
+export function enrichObjektFeedbackZuordnung(
+  objektFeedbackZuordnung: ObjektFeedbackZuordnung[],
+  maps: ObjektFeedbackZuordnungMaps
+): EnrichedObjektFeedbackZuordnung[] {
+  return objektFeedbackZuordnung.map(r => ({
+    ...r,
+    if_knowledge_itemName: resolveDisplay(r.fields.if_knowledge_item, maps.wissensobjekteMap, 'title'),
+    if_feedback_versionName: resolveDisplay(r.fields.if_feedback_version, maps.feedbackUndVersionenMap, 'version_number'),
   }));
 }

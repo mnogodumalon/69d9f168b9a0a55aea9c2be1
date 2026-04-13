@@ -4,15 +4,13 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Layout } from '@/components/Layout';
 import DashboardOverview from '@/pages/DashboardOverview';
 import AdminPage from '@/pages/AdminPage';
-import BenutzerrollenPage from '@/pages/BenutzerrollenPage';
-import WissenslandkartenPage from '@/pages/WissenslandkartenPage';
-import WissensobjektePage from '@/pages/WissensobjektePage';
-import ObjektFeedbackZuordnungPage from '@/pages/ObjektFeedbackZuordnungPage';
-import FeedbackUndVersionenPage from '@/pages/FeedbackUndVersionenPage';
 import KartenKnotenPage from '@/pages/KartenKnotenPage';
+import WissensobjektePage from '@/pages/WissensobjektePage';
+import FeedbackUndVersionenPage from '@/pages/FeedbackUndVersionenPage';
+import WissenslandkartenPage from '@/pages/WissenslandkartenPage';
+import BenutzerrollenPage from '@/pages/BenutzerrollenPage';
 import ObjektVerlinkungenPage from '@/pages/ObjektVerlinkungenPage';
-import KuratiereWissensobjektPage from '@/pages/intents/KuratiereWissensobjektPage';
-import BefuelleWissenskartePage from '@/pages/intents/BefuelleWissenskartePage';
+import ObjektFeedbackZuordnungPage from '@/pages/ObjektFeedbackZuordnungPage';
 
 export default function App() {
   return (
@@ -22,16 +20,14 @@ export default function App() {
           <Routes>
             <Route element={<Layout />}>
               <Route index element={<DashboardOverview />} />
-              <Route path="benutzerrollen" element={<BenutzerrollenPage />} />
-              <Route path="wissenslandkarten" element={<WissenslandkartenPage />} />
-              <Route path="wissensobjekte" element={<WissensobjektePage />} />
-              <Route path="objekt-feedback-zuordnung" element={<ObjektFeedbackZuordnungPage />} />
-              <Route path="feedback-und-versionen" element={<FeedbackUndVersionenPage />} />
               <Route path="karten-knoten" element={<KartenKnotenPage />} />
+              <Route path="wissensobjekte" element={<WissensobjektePage />} />
+              <Route path="feedback-und-versionen" element={<FeedbackUndVersionenPage />} />
+              <Route path="wissenslandkarten" element={<WissenslandkartenPage />} />
+              <Route path="benutzerrollen" element={<BenutzerrollenPage />} />
               <Route path="objekt-verlinkungen" element={<ObjektVerlinkungenPage />} />
+              <Route path="objekt-feedback-zuordnung" element={<ObjektFeedbackZuordnungPage />} />
               <Route path="admin" element={<AdminPage />} />
-              <Route path="intents/kuratiere-wissensobjekt" element={<KuratiereWissensobjektPage />} />
-              <Route path="intents/befuelle-wissenskarte" element={<BefuelleWissenskartePage />} />
             </Route>
           </Routes>
         </ActionsProvider>

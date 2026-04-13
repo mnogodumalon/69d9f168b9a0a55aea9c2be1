@@ -1,6 +1,6 @@
 // AUTOMATICALLY GENERATED SERVICE
 import { APP_IDS, LOOKUP_OPTIONS, FIELD_TYPES } from '@/types/app';
-import type { Benutzerrollen, Wissenslandkarten, Wissensobjekte, ObjektFeedbackZuordnung, FeedbackUndVersionen, KartenKnoten, ObjektVerlinkungen, CreateBenutzerrollen, CreateWissenslandkarten, CreateWissensobjekte, CreateObjektFeedbackZuordnung, CreateFeedbackUndVersionen, CreateKartenKnoten, CreateObjektVerlinkungen } from '@/types/app';
+import type { KartenKnoten, Wissensobjekte, FeedbackUndVersionen, Wissenslandkarten, Benutzerrollen, ObjektVerlinkungen, ObjektFeedbackZuordnung, CreateKartenKnoten, CreateWissensobjekte, CreateFeedbackUndVersionen, CreateWissenslandkarten, CreateBenutzerrollen, CreateObjektVerlinkungen, CreateObjektFeedbackZuordnung } from '@/types/app';
 
 // Base Configuration
 const API_BASE_URL = 'https://my.living-apps.de/rest';
@@ -192,50 +192,27 @@ export async function getAppGroups(): Promise<AppGroupInfo[]> {
 }
 
 export class LivingAppsService {
-  // --- BENUTZERROLLEN ---
-  static async getBenutzerrollen(): Promise<Benutzerrollen[]> {
-    const data = await callApi('GET', `/apps/${APP_IDS.BENUTZERROLLEN}/records`);
+  // --- KARTEN_KNOTEN ---
+  static async getKartenKnoten(): Promise<KartenKnoten[]> {
+    const data = await callApi('GET', `/apps/${APP_IDS.KARTEN_KNOTEN}/records`);
     const records = Object.entries(data).map(([id, rec]: [string, any]) => ({
       record_id: id, ...rec
-    })) as Benutzerrollen[];
-    return enrichLookupFields(records, 'benutzerrollen');
+    })) as KartenKnoten[];
+    return enrichLookupFields(records, 'karten_knoten');
   }
-  static async getBenutzerrollenEntry(id: string): Promise<Benutzerrollen | undefined> {
-    const data = await callApi('GET', `/apps/${APP_IDS.BENUTZERROLLEN}/records/${id}`);
-    const record = { record_id: data.id, ...data } as Benutzerrollen;
-    return enrichLookupFields([record], 'benutzerrollen')[0];
+  static async getKartenKnotenEntry(id: string): Promise<KartenKnoten | undefined> {
+    const data = await callApi('GET', `/apps/${APP_IDS.KARTEN_KNOTEN}/records/${id}`);
+    const record = { record_id: data.id, ...data } as KartenKnoten;
+    return enrichLookupFields([record], 'karten_knoten')[0];
   }
-  static async createBenutzerrollenEntry(fields: CreateBenutzerrollen) {
-    return callApi('POST', `/apps/${APP_IDS.BENUTZERROLLEN}/records`, { fields: cleanFieldsForApi(fields as any, 'benutzerrollen') });
+  static async createKartenKnotenEntry(fields: CreateKartenKnoten) {
+    return callApi('POST', `/apps/${APP_IDS.KARTEN_KNOTEN}/records`, { fields: cleanFieldsForApi(fields as any, 'karten_knoten') });
   }
-  static async updateBenutzerrollenEntry(id: string, fields: Partial<CreateBenutzerrollen>) {
-    return callApi('PATCH', `/apps/${APP_IDS.BENUTZERROLLEN}/records/${id}`, { fields: cleanFieldsForApi(fields as any, 'benutzerrollen') });
+  static async updateKartenKnotenEntry(id: string, fields: Partial<CreateKartenKnoten>) {
+    return callApi('PATCH', `/apps/${APP_IDS.KARTEN_KNOTEN}/records/${id}`, { fields: cleanFieldsForApi(fields as any, 'karten_knoten') });
   }
-  static async deleteBenutzerrollenEntry(id: string) {
-    return callApi('DELETE', `/apps/${APP_IDS.BENUTZERROLLEN}/records/${id}`);
-  }
-
-  // --- WISSENSLANDKARTEN ---
-  static async getWissenslandkarten(): Promise<Wissenslandkarten[]> {
-    const data = await callApi('GET', `/apps/${APP_IDS.WISSENSLANDKARTEN}/records`);
-    const records = Object.entries(data).map(([id, rec]: [string, any]) => ({
-      record_id: id, ...rec
-    })) as Wissenslandkarten[];
-    return enrichLookupFields(records, 'wissenslandkarten');
-  }
-  static async getWissenslandkartenEntry(id: string): Promise<Wissenslandkarten | undefined> {
-    const data = await callApi('GET', `/apps/${APP_IDS.WISSENSLANDKARTEN}/records/${id}`);
-    const record = { record_id: data.id, ...data } as Wissenslandkarten;
-    return enrichLookupFields([record], 'wissenslandkarten')[0];
-  }
-  static async createWissenslandkartenEntry(fields: CreateWissenslandkarten) {
-    return callApi('POST', `/apps/${APP_IDS.WISSENSLANDKARTEN}/records`, { fields: cleanFieldsForApi(fields as any, 'wissenslandkarten') });
-  }
-  static async updateWissenslandkartenEntry(id: string, fields: Partial<CreateWissenslandkarten>) {
-    return callApi('PATCH', `/apps/${APP_IDS.WISSENSLANDKARTEN}/records/${id}`, { fields: cleanFieldsForApi(fields as any, 'wissenslandkarten') });
-  }
-  static async deleteWissenslandkartenEntry(id: string) {
-    return callApi('DELETE', `/apps/${APP_IDS.WISSENSLANDKARTEN}/records/${id}`);
+  static async deleteKartenKnotenEntry(id: string) {
+    return callApi('DELETE', `/apps/${APP_IDS.KARTEN_KNOTEN}/records/${id}`);
   }
 
   // --- WISSENSOBJEKTE ---
@@ -261,29 +238,6 @@ export class LivingAppsService {
     return callApi('DELETE', `/apps/${APP_IDS.WISSENSOBJEKTE}/records/${id}`);
   }
 
-  // --- OBJEKT_FEEDBACK_ZUORDNUNG ---
-  static async getObjektFeedbackZuordnung(): Promise<ObjektFeedbackZuordnung[]> {
-    const data = await callApi('GET', `/apps/${APP_IDS.OBJEKT_FEEDBACK_ZUORDNUNG}/records`);
-    const records = Object.entries(data).map(([id, rec]: [string, any]) => ({
-      record_id: id, ...rec
-    })) as ObjektFeedbackZuordnung[];
-    return enrichLookupFields(records, 'objekt_feedback_zuordnung');
-  }
-  static async getObjektFeedbackZuordnungEntry(id: string): Promise<ObjektFeedbackZuordnung | undefined> {
-    const data = await callApi('GET', `/apps/${APP_IDS.OBJEKT_FEEDBACK_ZUORDNUNG}/records/${id}`);
-    const record = { record_id: data.id, ...data } as ObjektFeedbackZuordnung;
-    return enrichLookupFields([record], 'objekt_feedback_zuordnung')[0];
-  }
-  static async createObjektFeedbackZuordnungEntry(fields: CreateObjektFeedbackZuordnung) {
-    return callApi('POST', `/apps/${APP_IDS.OBJEKT_FEEDBACK_ZUORDNUNG}/records`, { fields: cleanFieldsForApi(fields as any, 'objekt_feedback_zuordnung') });
-  }
-  static async updateObjektFeedbackZuordnungEntry(id: string, fields: Partial<CreateObjektFeedbackZuordnung>) {
-    return callApi('PATCH', `/apps/${APP_IDS.OBJEKT_FEEDBACK_ZUORDNUNG}/records/${id}`, { fields: cleanFieldsForApi(fields as any, 'objekt_feedback_zuordnung') });
-  }
-  static async deleteObjektFeedbackZuordnungEntry(id: string) {
-    return callApi('DELETE', `/apps/${APP_IDS.OBJEKT_FEEDBACK_ZUORDNUNG}/records/${id}`);
-  }
-
   // --- FEEDBACK_UND_VERSIONEN ---
   static async getFeedbackUndVersionen(): Promise<FeedbackUndVersionen[]> {
     const data = await callApi('GET', `/apps/${APP_IDS.FEEDBACK_UND_VERSIONEN}/records`);
@@ -307,27 +261,50 @@ export class LivingAppsService {
     return callApi('DELETE', `/apps/${APP_IDS.FEEDBACK_UND_VERSIONEN}/records/${id}`);
   }
 
-  // --- KARTEN_KNOTEN ---
-  static async getKartenKnoten(): Promise<KartenKnoten[]> {
-    const data = await callApi('GET', `/apps/${APP_IDS.KARTEN_KNOTEN}/records`);
+  // --- WISSENSLANDKARTEN ---
+  static async getWissenslandkarten(): Promise<Wissenslandkarten[]> {
+    const data = await callApi('GET', `/apps/${APP_IDS.WISSENSLANDKARTEN}/records`);
     const records = Object.entries(data).map(([id, rec]: [string, any]) => ({
       record_id: id, ...rec
-    })) as KartenKnoten[];
-    return enrichLookupFields(records, 'karten_knoten');
+    })) as Wissenslandkarten[];
+    return enrichLookupFields(records, 'wissenslandkarten');
   }
-  static async getKartenKnotenEntry(id: string): Promise<KartenKnoten | undefined> {
-    const data = await callApi('GET', `/apps/${APP_IDS.KARTEN_KNOTEN}/records/${id}`);
-    const record = { record_id: data.id, ...data } as KartenKnoten;
-    return enrichLookupFields([record], 'karten_knoten')[0];
+  static async getWissenslandkartenEntry(id: string): Promise<Wissenslandkarten | undefined> {
+    const data = await callApi('GET', `/apps/${APP_IDS.WISSENSLANDKARTEN}/records/${id}`);
+    const record = { record_id: data.id, ...data } as Wissenslandkarten;
+    return enrichLookupFields([record], 'wissenslandkarten')[0];
   }
-  static async createKartenKnotenEntry(fields: CreateKartenKnoten) {
-    return callApi('POST', `/apps/${APP_IDS.KARTEN_KNOTEN}/records`, { fields: cleanFieldsForApi(fields as any, 'karten_knoten') });
+  static async createWissenslandkartenEntry(fields: CreateWissenslandkarten) {
+    return callApi('POST', `/apps/${APP_IDS.WISSENSLANDKARTEN}/records`, { fields: cleanFieldsForApi(fields as any, 'wissenslandkarten') });
   }
-  static async updateKartenKnotenEntry(id: string, fields: Partial<CreateKartenKnoten>) {
-    return callApi('PATCH', `/apps/${APP_IDS.KARTEN_KNOTEN}/records/${id}`, { fields: cleanFieldsForApi(fields as any, 'karten_knoten') });
+  static async updateWissenslandkartenEntry(id: string, fields: Partial<CreateWissenslandkarten>) {
+    return callApi('PATCH', `/apps/${APP_IDS.WISSENSLANDKARTEN}/records/${id}`, { fields: cleanFieldsForApi(fields as any, 'wissenslandkarten') });
   }
-  static async deleteKartenKnotenEntry(id: string) {
-    return callApi('DELETE', `/apps/${APP_IDS.KARTEN_KNOTEN}/records/${id}`);
+  static async deleteWissenslandkartenEntry(id: string) {
+    return callApi('DELETE', `/apps/${APP_IDS.WISSENSLANDKARTEN}/records/${id}`);
+  }
+
+  // --- BENUTZERROLLEN ---
+  static async getBenutzerrollen(): Promise<Benutzerrollen[]> {
+    const data = await callApi('GET', `/apps/${APP_IDS.BENUTZERROLLEN}/records`);
+    const records = Object.entries(data).map(([id, rec]: [string, any]) => ({
+      record_id: id, ...rec
+    })) as Benutzerrollen[];
+    return enrichLookupFields(records, 'benutzerrollen');
+  }
+  static async getBenutzerrollenEntry(id: string): Promise<Benutzerrollen | undefined> {
+    const data = await callApi('GET', `/apps/${APP_IDS.BENUTZERROLLEN}/records/${id}`);
+    const record = { record_id: data.id, ...data } as Benutzerrollen;
+    return enrichLookupFields([record], 'benutzerrollen')[0];
+  }
+  static async createBenutzerrollenEntry(fields: CreateBenutzerrollen) {
+    return callApi('POST', `/apps/${APP_IDS.BENUTZERROLLEN}/records`, { fields: cleanFieldsForApi(fields as any, 'benutzerrollen') });
+  }
+  static async updateBenutzerrollenEntry(id: string, fields: Partial<CreateBenutzerrollen>) {
+    return callApi('PATCH', `/apps/${APP_IDS.BENUTZERROLLEN}/records/${id}`, { fields: cleanFieldsForApi(fields as any, 'benutzerrollen') });
+  }
+  static async deleteBenutzerrollenEntry(id: string) {
+    return callApi('DELETE', `/apps/${APP_IDS.BENUTZERROLLEN}/records/${id}`);
   }
 
   // --- OBJEKT_VERLINKUNGEN ---
@@ -351,6 +328,29 @@ export class LivingAppsService {
   }
   static async deleteObjektVerlinkungenEntry(id: string) {
     return callApi('DELETE', `/apps/${APP_IDS.OBJEKT_VERLINKUNGEN}/records/${id}`);
+  }
+
+  // --- OBJEKT_FEEDBACK_ZUORDNUNG ---
+  static async getObjektFeedbackZuordnung(): Promise<ObjektFeedbackZuordnung[]> {
+    const data = await callApi('GET', `/apps/${APP_IDS.OBJEKT_FEEDBACK_ZUORDNUNG}/records`);
+    const records = Object.entries(data).map(([id, rec]: [string, any]) => ({
+      record_id: id, ...rec
+    })) as ObjektFeedbackZuordnung[];
+    return enrichLookupFields(records, 'objekt_feedback_zuordnung');
+  }
+  static async getObjektFeedbackZuordnungEntry(id: string): Promise<ObjektFeedbackZuordnung | undefined> {
+    const data = await callApi('GET', `/apps/${APP_IDS.OBJEKT_FEEDBACK_ZUORDNUNG}/records/${id}`);
+    const record = { record_id: data.id, ...data } as ObjektFeedbackZuordnung;
+    return enrichLookupFields([record], 'objekt_feedback_zuordnung')[0];
+  }
+  static async createObjektFeedbackZuordnungEntry(fields: CreateObjektFeedbackZuordnung) {
+    return callApi('POST', `/apps/${APP_IDS.OBJEKT_FEEDBACK_ZUORDNUNG}/records`, { fields: cleanFieldsForApi(fields as any, 'objekt_feedback_zuordnung') });
+  }
+  static async updateObjektFeedbackZuordnungEntry(id: string, fields: Partial<CreateObjektFeedbackZuordnung>) {
+    return callApi('PATCH', `/apps/${APP_IDS.OBJEKT_FEEDBACK_ZUORDNUNG}/records/${id}`, { fields: cleanFieldsForApi(fields as any, 'objekt_feedback_zuordnung') });
+  }
+  static async deleteObjektFeedbackZuordnungEntry(id: string) {
+    return callApi('DELETE', `/apps/${APP_IDS.OBJEKT_FEEDBACK_ZUORDNUNG}/records/${id}`);
   }
 
 }
