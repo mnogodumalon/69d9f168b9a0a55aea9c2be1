@@ -108,6 +108,26 @@ export default function DashboardOverview() {
 
   return (
     <div className="space-y-6">
+      {/* Intent Workflows */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <a href="#/intents/kuratiere-wissensobjekt" className="flex items-center gap-4 bg-card border border-border border-l-4 border-l-primary rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow no-underline overflow-hidden">
+          <IconBrain size={22} className="text-primary shrink-0" />
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold text-sm text-foreground truncate">Wissensobjekt kuratieren</p>
+            <p className="text-xs text-muted-foreground line-clamp-2">Objekt auswählen, Feedback hinzufügen, Qualität & Phase aktualisieren</p>
+          </div>
+          <IconChevronRight size={16} className="text-muted-foreground shrink-0" />
+        </a>
+        <a href="#/intents/befuelle-wissenskarte" className="flex items-center gap-4 bg-card border border-border border-l-4 border-l-primary rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow no-underline overflow-hidden">
+          <IconMap size={22} className="text-primary shrink-0" />
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold text-sm text-foreground truncate">Wissenskarte befüllen</p>
+            <p className="text-xs text-muted-foreground line-clamp-2">Karte auswählen, Wissensobjekte als Knoten hinzufügen, Verlinkungen erstellen</p>
+          </div>
+          <IconChevronRight size={16} className="text-muted-foreground shrink-0" />
+        </a>
+      </div>
+
       {/* KPI Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard
