@@ -1,14 +1,12 @@
 import type { FeedbackUndVersionen, KartenKnoten, ObjektFeedbackZuordnung, ObjektVerlinkungen, Wissenslandkarten, Wissensobjekte } from './app';
 
-export type EnrichedKartenKnoten = KartenKnoten & {
-  mn_mapName: string;
-  mn_itemName: string;
-  mn_added_byName: string;
-};
-
 export type EnrichedWissensobjekte = Wissensobjekte & {
   authorName: string;
   curatorName: string;
+};
+
+export type EnrichedWissenslandkarten = Wissenslandkarten & {
+  map_creatorName: string;
 };
 
 export type EnrichedFeedbackUndVersionen = FeedbackUndVersionen & {
@@ -16,14 +14,16 @@ export type EnrichedFeedbackUndVersionen = FeedbackUndVersionen & {
   responsible_personName: string;
 };
 
-export type EnrichedWissenslandkarten = Wissenslandkarten & {
-  map_creatorName: string;
-};
-
 export type EnrichedObjektVerlinkungen = ObjektVerlinkungen & {
   item_fromName: string;
   item_toName: string;
   il_created_byName: string;
+};
+
+export type EnrichedKartenKnoten = KartenKnoten & {
+  mn_mapName: string;
+  mn_itemName: string;
+  mn_added_byName: string;
 };
 
 export type EnrichedObjektFeedbackZuordnung = ObjektFeedbackZuordnung & {

@@ -1,6 +1,6 @@
 // AUTOMATICALLY GENERATED SERVICE
 import { APP_IDS, LOOKUP_OPTIONS, FIELD_TYPES } from '@/types/app';
-import type { KartenKnoten, Wissensobjekte, FeedbackUndVersionen, Wissenslandkarten, Benutzerrollen, ObjektVerlinkungen, ObjektFeedbackZuordnung, CreateKartenKnoten, CreateWissensobjekte, CreateFeedbackUndVersionen, CreateWissenslandkarten, CreateBenutzerrollen, CreateObjektVerlinkungen, CreateObjektFeedbackZuordnung } from '@/types/app';
+import type { Benutzerrollen, Wissensobjekte, Wissenslandkarten, FeedbackUndVersionen, ObjektVerlinkungen, KartenKnoten, ObjektFeedbackZuordnung, CreateBenutzerrollen, CreateWissensobjekte, CreateWissenslandkarten, CreateFeedbackUndVersionen, CreateObjektVerlinkungen, CreateKartenKnoten, CreateObjektFeedbackZuordnung } from '@/types/app';
 
 // Base Configuration
 const API_BASE_URL = 'https://my.living-apps.de/rest';
@@ -192,27 +192,27 @@ export async function getAppGroups(): Promise<AppGroupInfo[]> {
 }
 
 export class LivingAppsService {
-  // --- KARTEN_KNOTEN ---
-  static async getKartenKnoten(): Promise<KartenKnoten[]> {
-    const data = await callApi('GET', `/apps/${APP_IDS.KARTEN_KNOTEN}/records`);
+  // --- BENUTZERROLLEN ---
+  static async getBenutzerrollen(): Promise<Benutzerrollen[]> {
+    const data = await callApi('GET', `/apps/${APP_IDS.BENUTZERROLLEN}/records`);
     const records = Object.entries(data).map(([id, rec]: [string, any]) => ({
       record_id: id, ...rec
-    })) as KartenKnoten[];
-    return enrichLookupFields(records, 'karten_knoten');
+    })) as Benutzerrollen[];
+    return enrichLookupFields(records, 'benutzerrollen');
   }
-  static async getKartenKnotenEntry(id: string): Promise<KartenKnoten | undefined> {
-    const data = await callApi('GET', `/apps/${APP_IDS.KARTEN_KNOTEN}/records/${id}`);
-    const record = { record_id: data.id, ...data } as KartenKnoten;
-    return enrichLookupFields([record], 'karten_knoten')[0];
+  static async getBenutzerrollenEntry(id: string): Promise<Benutzerrollen | undefined> {
+    const data = await callApi('GET', `/apps/${APP_IDS.BENUTZERROLLEN}/records/${id}`);
+    const record = { record_id: data.id, ...data } as Benutzerrollen;
+    return enrichLookupFields([record], 'benutzerrollen')[0];
   }
-  static async createKartenKnotenEntry(fields: CreateKartenKnoten) {
-    return callApi('POST', `/apps/${APP_IDS.KARTEN_KNOTEN}/records`, { fields: cleanFieldsForApi(fields as any, 'karten_knoten') });
+  static async createBenutzerrollenEntry(fields: CreateBenutzerrollen) {
+    return callApi('POST', `/apps/${APP_IDS.BENUTZERROLLEN}/records`, { fields: cleanFieldsForApi(fields as any, 'benutzerrollen') });
   }
-  static async updateKartenKnotenEntry(id: string, fields: Partial<CreateKartenKnoten>) {
-    return callApi('PATCH', `/apps/${APP_IDS.KARTEN_KNOTEN}/records/${id}`, { fields: cleanFieldsForApi(fields as any, 'karten_knoten') });
+  static async updateBenutzerrollenEntry(id: string, fields: Partial<CreateBenutzerrollen>) {
+    return callApi('PATCH', `/apps/${APP_IDS.BENUTZERROLLEN}/records/${id}`, { fields: cleanFieldsForApi(fields as any, 'benutzerrollen') });
   }
-  static async deleteKartenKnotenEntry(id: string) {
-    return callApi('DELETE', `/apps/${APP_IDS.KARTEN_KNOTEN}/records/${id}`);
+  static async deleteBenutzerrollenEntry(id: string) {
+    return callApi('DELETE', `/apps/${APP_IDS.BENUTZERROLLEN}/records/${id}`);
   }
 
   // --- WISSENSOBJEKTE ---
@@ -238,29 +238,6 @@ export class LivingAppsService {
     return callApi('DELETE', `/apps/${APP_IDS.WISSENSOBJEKTE}/records/${id}`);
   }
 
-  // --- FEEDBACK_UND_VERSIONEN ---
-  static async getFeedbackUndVersionen(): Promise<FeedbackUndVersionen[]> {
-    const data = await callApi('GET', `/apps/${APP_IDS.FEEDBACK_UND_VERSIONEN}/records`);
-    const records = Object.entries(data).map(([id, rec]: [string, any]) => ({
-      record_id: id, ...rec
-    })) as FeedbackUndVersionen[];
-    return enrichLookupFields(records, 'feedback_und_versionen');
-  }
-  static async getFeedbackUndVersionenEntry(id: string): Promise<FeedbackUndVersionen | undefined> {
-    const data = await callApi('GET', `/apps/${APP_IDS.FEEDBACK_UND_VERSIONEN}/records/${id}`);
-    const record = { record_id: data.id, ...data } as FeedbackUndVersionen;
-    return enrichLookupFields([record], 'feedback_und_versionen')[0];
-  }
-  static async createFeedbackUndVersionenEntry(fields: CreateFeedbackUndVersionen) {
-    return callApi('POST', `/apps/${APP_IDS.FEEDBACK_UND_VERSIONEN}/records`, { fields: cleanFieldsForApi(fields as any, 'feedback_und_versionen') });
-  }
-  static async updateFeedbackUndVersionenEntry(id: string, fields: Partial<CreateFeedbackUndVersionen>) {
-    return callApi('PATCH', `/apps/${APP_IDS.FEEDBACK_UND_VERSIONEN}/records/${id}`, { fields: cleanFieldsForApi(fields as any, 'feedback_und_versionen') });
-  }
-  static async deleteFeedbackUndVersionenEntry(id: string) {
-    return callApi('DELETE', `/apps/${APP_IDS.FEEDBACK_UND_VERSIONEN}/records/${id}`);
-  }
-
   // --- WISSENSLANDKARTEN ---
   static async getWissenslandkarten(): Promise<Wissenslandkarten[]> {
     const data = await callApi('GET', `/apps/${APP_IDS.WISSENSLANDKARTEN}/records`);
@@ -284,27 +261,27 @@ export class LivingAppsService {
     return callApi('DELETE', `/apps/${APP_IDS.WISSENSLANDKARTEN}/records/${id}`);
   }
 
-  // --- BENUTZERROLLEN ---
-  static async getBenutzerrollen(): Promise<Benutzerrollen[]> {
-    const data = await callApi('GET', `/apps/${APP_IDS.BENUTZERROLLEN}/records`);
+  // --- FEEDBACK_UND_VERSIONEN ---
+  static async getFeedbackUndVersionen(): Promise<FeedbackUndVersionen[]> {
+    const data = await callApi('GET', `/apps/${APP_IDS.FEEDBACK_UND_VERSIONEN}/records`);
     const records = Object.entries(data).map(([id, rec]: [string, any]) => ({
       record_id: id, ...rec
-    })) as Benutzerrollen[];
-    return enrichLookupFields(records, 'benutzerrollen');
+    })) as FeedbackUndVersionen[];
+    return enrichLookupFields(records, 'feedback_und_versionen');
   }
-  static async getBenutzerrollenEntry(id: string): Promise<Benutzerrollen | undefined> {
-    const data = await callApi('GET', `/apps/${APP_IDS.BENUTZERROLLEN}/records/${id}`);
-    const record = { record_id: data.id, ...data } as Benutzerrollen;
-    return enrichLookupFields([record], 'benutzerrollen')[0];
+  static async getFeedbackUndVersionenEntry(id: string): Promise<FeedbackUndVersionen | undefined> {
+    const data = await callApi('GET', `/apps/${APP_IDS.FEEDBACK_UND_VERSIONEN}/records/${id}`);
+    const record = { record_id: data.id, ...data } as FeedbackUndVersionen;
+    return enrichLookupFields([record], 'feedback_und_versionen')[0];
   }
-  static async createBenutzerrollenEntry(fields: CreateBenutzerrollen) {
-    return callApi('POST', `/apps/${APP_IDS.BENUTZERROLLEN}/records`, { fields: cleanFieldsForApi(fields as any, 'benutzerrollen') });
+  static async createFeedbackUndVersionenEntry(fields: CreateFeedbackUndVersionen) {
+    return callApi('POST', `/apps/${APP_IDS.FEEDBACK_UND_VERSIONEN}/records`, { fields: cleanFieldsForApi(fields as any, 'feedback_und_versionen') });
   }
-  static async updateBenutzerrollenEntry(id: string, fields: Partial<CreateBenutzerrollen>) {
-    return callApi('PATCH', `/apps/${APP_IDS.BENUTZERROLLEN}/records/${id}`, { fields: cleanFieldsForApi(fields as any, 'benutzerrollen') });
+  static async updateFeedbackUndVersionenEntry(id: string, fields: Partial<CreateFeedbackUndVersionen>) {
+    return callApi('PATCH', `/apps/${APP_IDS.FEEDBACK_UND_VERSIONEN}/records/${id}`, { fields: cleanFieldsForApi(fields as any, 'feedback_und_versionen') });
   }
-  static async deleteBenutzerrollenEntry(id: string) {
-    return callApi('DELETE', `/apps/${APP_IDS.BENUTZERROLLEN}/records/${id}`);
+  static async deleteFeedbackUndVersionenEntry(id: string) {
+    return callApi('DELETE', `/apps/${APP_IDS.FEEDBACK_UND_VERSIONEN}/records/${id}`);
   }
 
   // --- OBJEKT_VERLINKUNGEN ---
@@ -328,6 +305,29 @@ export class LivingAppsService {
   }
   static async deleteObjektVerlinkungenEntry(id: string) {
     return callApi('DELETE', `/apps/${APP_IDS.OBJEKT_VERLINKUNGEN}/records/${id}`);
+  }
+
+  // --- KARTEN_KNOTEN ---
+  static async getKartenKnoten(): Promise<KartenKnoten[]> {
+    const data = await callApi('GET', `/apps/${APP_IDS.KARTEN_KNOTEN}/records`);
+    const records = Object.entries(data).map(([id, rec]: [string, any]) => ({
+      record_id: id, ...rec
+    })) as KartenKnoten[];
+    return enrichLookupFields(records, 'karten_knoten');
+  }
+  static async getKartenKnotenEntry(id: string): Promise<KartenKnoten | undefined> {
+    const data = await callApi('GET', `/apps/${APP_IDS.KARTEN_KNOTEN}/records/${id}`);
+    const record = { record_id: data.id, ...data } as KartenKnoten;
+    return enrichLookupFields([record], 'karten_knoten')[0];
+  }
+  static async createKartenKnotenEntry(fields: CreateKartenKnoten) {
+    return callApi('POST', `/apps/${APP_IDS.KARTEN_KNOTEN}/records`, { fields: cleanFieldsForApi(fields as any, 'karten_knoten') });
+  }
+  static async updateKartenKnotenEntry(id: string, fields: Partial<CreateKartenKnoten>) {
+    return callApi('PATCH', `/apps/${APP_IDS.KARTEN_KNOTEN}/records/${id}`, { fields: cleanFieldsForApi(fields as any, 'karten_knoten') });
+  }
+  static async deleteKartenKnotenEntry(id: string) {
+    return callApi('DELETE', `/apps/${APP_IDS.KARTEN_KNOTEN}/records/${id}`);
   }
 
   // --- OBJEKT_FEEDBACK_ZUORDNUNG ---
