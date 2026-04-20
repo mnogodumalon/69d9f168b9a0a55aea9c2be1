@@ -26,10 +26,10 @@ function Linkify({ text }: { text: string }) {
 }
 
 function renderInline(text: string) {
-  // Bold, italic, inline code, links — applied left-to-right
+  // Bold, italic, inline code, images, links — applied left-to-right
   const tokens: Array<{ type: string; text: string; href?: string }> = [];
-  // Regex order: code, bold, italic, md-link
-  const re = /(`[^`]+`)|(\*\*[^*]+\*\*)|(\*[^*]+\*)|(\[[^\]]+\]\([^)]+\))/g;
+  // Regex order: code, bold, italic, md-image, md-link (image must come before link)
+  const re = /(`[^`]+`)|(\*\*[^*]+\*\*)|(\*[^*]+\*)|(!\[[^\]]*\]\([^)]+\))|(\[[^\]]+\]\([^)]+\))/g;
   let last = 0;
   let m: RegExpExecArray | null;
   while ((m = re.exec(text)) !== null) {
@@ -39,6 +39,10 @@ function renderInline(text: string) {
     else if (m[2]) tokens.push({ type: 'bold', text: raw.slice(2, -2) });
     else if (m[3]) tokens.push({ type: 'italic', text: raw.slice(1, -1) });
     else if (m[4]) {
+      const im = raw.match(/!\[([^\]]*)\]\(([^)]+)\)/);
+      if (im) tokens.push({ type: 'image', text: im[1], href: im[2] });
+    }
+    else if (m[5]) {
       const lm = raw.match(/\[([^\]]+)\]\(([^)]+)\)/);
       if (lm) tokens.push({ type: 'link', text: lm[1], href: lm[2] });
     }
@@ -51,6 +55,14 @@ function renderInline(text: string) {
       case 'code': return <code key={i} className="bg-black/5 rounded px-1 py-0.5 text-[0.85em] font-mono">{t.text}</code>;
       case 'bold': return <strong key={i}><Linkify text={t.text} /></strong>;
       case 'italic': return <em key={i}><Linkify text={t.text} /></em>;
+      case 'image': {
+        const safe = t.href && /^(https?:|data:image\/)/i.test(t.href);
+        return safe ? (
+          <a key={i} href={t.href} target="_blank" rel="noopener noreferrer">
+            <img src={t.href} alt={t.text} className="max-w-full max-h-48 rounded-lg my-1.5 inline-block" loading="lazy" />
+          </a>
+        ) : <span key={i}>{t.text}</span>;
+      }
       case 'link': return <a key={i} href={t.href} target="_blank" rel="noopener noreferrer" className="underline">{t.text}</a>;
       default: return <Linkify key={i} text={t.text} />;
     }
