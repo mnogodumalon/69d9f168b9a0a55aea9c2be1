@@ -1,4 +1,3 @@
-import { lazy, Suspense } from 'react';
 import { HashRouter, Routes, Route } from 'react-router-dom';
 import { ActionsProvider } from '@/context/ActionsContext';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -13,8 +12,11 @@ import ObjektVerlinkungenPage from '@/pages/ObjektVerlinkungenPage';
 import KartenKnotenPage from '@/pages/KartenKnotenPage';
 import ObjektFeedbackZuordnungPage from '@/pages/ObjektFeedbackZuordnungPage';
 
+// <custom:imports>
+import { lazy, Suspense } from 'react';
 const WissensobjektKurierenPage = lazy(() => import('@/pages/intents/WissensobjektKurierenPage'));
 const WissenslandkarteBefuellenPage = lazy(() => import('@/pages/intents/WissenslandkarteBefuellenPage'));
+// </custom:imports>
 
 export default function App() {
   return (
@@ -32,8 +34,10 @@ export default function App() {
               <Route path="karten-knoten" element={<KartenKnotenPage />} />
               <Route path="objekt-feedback-zuordnung" element={<ObjektFeedbackZuordnungPage />} />
               <Route path="admin" element={<AdminPage />} />
+              {/* <custom:routes> */}
               <Route path="intents/wissensobjekt-kuratieren" element={<Suspense fallback={null}><WissensobjektKurierenPage /></Suspense>} />
               <Route path="intents/wissenslandkarte-befuellen" element={<Suspense fallback={null}><WissenslandkarteBefuellenPage /></Suspense>} />
+            {/* </custom:routes> */}
             </Route>
           </Routes>
         </ActionsProvider>
